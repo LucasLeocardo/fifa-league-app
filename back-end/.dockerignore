@@ -1,0 +1,22 @@
+.git
+.gitignore
+.venv
+venv
+env
+__pycache__
+*.py[cod]
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.coverage
+htmlcov
+
+# Segredos (nunca vao para a imagem)
+.env
+.env.*
+!.env.example
+
+# Artefatos que nao sao da API
+tests/
+database/
+*.md

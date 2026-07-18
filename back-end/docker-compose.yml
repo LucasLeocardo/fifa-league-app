@@ -1,0 +1,17 @@
+services:
+  api:
+    build: .
+    container_name: fifa-league-api
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    # Em desenvolvimento: monta o codigo e recarrega a cada alteracao.
+    # Em producao, remova o volume e o "--reload" do command.
+    volumes:
+      - ./app:/app/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    restart: unless-stopped
+
+# Observacao: o banco fica no Supabase (nuvem), entao nao ha servico de
+# Postgres aqui. Basta apontar DATABASE_URL no .env para o seu projeto.
