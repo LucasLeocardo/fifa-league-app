@@ -1,4 +1,4 @@
-"""Client Admin do Supabase (secret key) para operacoes de Auth no back-end."""
+"""Client Admin do Supabase (service_role) para operacoes de Auth no back-end."""
 
 from functools import lru_cache
 
@@ -10,10 +10,10 @@ from app.core.config import settings
 
 @lru_cache
 def get_supabase_admin() -> Client:
-    """Client com secret key: so usar no servidor, nunca no front."""
+    """Client com service_role JWT: so usar no servidor, nunca no front."""
     return create_client(
         settings.supabase_url,
-        settings.supabase_secret_key,
+        settings.supabase_service_role_key,
         options=ClientOptions(
             auto_refresh_token=False,
             persist_session=False,

@@ -27,17 +27,20 @@ class Settings(BaseSettings):
     )
     db_echo: bool = False
     db_use_ssl: bool = True
+    # Em redes corporativas (proxy/MITM) a validacao do certificado pode falhar.
+    # Em producao mantenha True.
+    db_ssl_verify: bool = True
     # 0 = desativa prepared statements (necessario no pooler transacional 6543).
     db_statement_cache_size: int = 0
 
-    # --- Supabase Auth (Admin API; secret key so no back-end) ---
+    # --- Supabase Auth (Admin API; service_role JWT so no back-end) ---
     supabase_url: str = Field(
         ...,
         description="URL do projeto Supabase (ex.: https://xxxx.supabase.co)",
     )
-    supabase_secret_key: str = Field(
+    supabase_service_role_key: str = Field(
         ...,
-        description="Secret key do Supabase (sb_secret_...; nunca expor no front)",
+        description="Service role key JWT do Supabase (eyJ...; nunca expor no front)",
     )
 
     # --- CORS ---

@@ -67,4 +67,4 @@ async def logout(credentials: BearerTokenDep, service: AuthServiceDep) -> None:
     Envie Authorization: Bearer <accessToken>. Depois, o front deve apagar
     accessToken e refreshToken do storage local.
     """
-    await service.logout(credentials.credentials)
+    service.logout(credentials.credentials)

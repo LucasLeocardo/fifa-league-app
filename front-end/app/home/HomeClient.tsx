@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 
 import { ApiError, logout as logoutRequest } from "@/lib/api";
 import { useAuthStore } from "@/store/auth";
+import { useFlashStore } from "@/store/flash";
 
 export function HomeClient() {
   const router = useRouter();
@@ -13,9 +14,10 @@ export function HomeClient() {
   const coachName = useAuthStore((s) => s.coachName);
   const isAdmin = useAuthStore((s) => s.isAdmin);
   const clearSession = useAuthStore((s) => s.clearSession);
+  const flashSuccess = useFlashStore((s) => s.success);
+  const flashError = useFlashStore((s) => s.error);
 
   const [hydrated, setHydrated] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -30,16 +32,18 @@ export function HomeClient() {
   }, [hydrated, accessToken, router]);
 
   async function handleLogout() {
-    setError(null);
     setLoading(true);
     try {
       if (accessToken) {
         await logoutRequest(accessToken);
       }
+      flashSuccess("Sessao encerrada.");
     } catch (err) {
       // Mesmo se a API falhar, limpa a sessao local.
       if (err instanceof ApiError) {
-        setError(err.message);
+        flashError(err.message);
+      } else {
+        flashError("Nao foi possivel encerrar no servidor. Sessao local limpa.");
       }
     } finally {
       clearSession();
@@ -70,12 +74,6 @@ export function HomeClient() {
           {" · "}
           {isAdmin ? "Admin" : "Jogador"}
         </p>
-
-        {error ? (
-          <p className="mt-4 text-sm text-[var(--danger)]" role="alert">
-            {error}
-          </p>
-        ) : null}
 
         <button
           type="button"

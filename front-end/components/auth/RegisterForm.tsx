@@ -5,45 +5,42 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 
 import { ApiError, register } from "@/lib/api";
+import { useFlashStore } from "@/store/flash";
 
 const fieldClass =
-  "w-full border border-[var(--stroke)] bg-[rgba(4,17,12,0.55)] px-3.5 py-3 text-[var(--ink)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--muted)] focus:border-[var(--lime)] focus:shadow-[0_0_0_3px_rgba(200,245,66,0.12)]";
+  "w-full border border-[var(--stroke)] bg-[rgba(10,32,58,0.55)] px-3.5 py-3 text-[var(--ink)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--muted)] focus:border-[var(--lime)] focus:shadow-[0_0_0_3px_rgba(200,245,66,0.12)]";
 
 const labelClass =
   "mb-1.5 block text-xs font-medium uppercase tracking-[0.14em] text-[var(--muted)]";
 
 export function RegisterForm() {
   const router = useRouter();
+  const flashSuccess = useFlashStore((s) => s.success);
+  const flashError = useFlashStore((s) => s.error);
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setError(null);
-    setSuccess(null);
 
     if (!name.trim() || !email.trim() || password.length < 8) {
-      setError("Informe nome, email e senha com pelo menos 8 caracteres.");
+      flashError("Informe nome, email e senha com pelo menos 8 caracteres.");
       return;
     }
 
     setLoading(true);
     try {
       await register(name.trim(), email.trim(), password);
-      setSuccess(
-        "Conta criada. Confirme o email e depois faca login.",
-      );
+      flashSuccess("Conta criada. Confirme o email e depois faca login.");
       setTimeout(() => router.push("/login"), 1800);
     } catch (err) {
       if (err instanceof ApiError) {
-        setError(err.message);
+        flashError(err.message);
       } else {
-        setError("Nao foi possivel criar a conta. Tente novamente.");
+        flashError("Nao foi possivel criar a conta. Tente novamente.");
       }
     } finally {
       setLoading(false);
@@ -102,18 +99,6 @@ export function RegisterForm() {
           disabled={loading}
         />
       </div>
-
-      {error ? (
-        <p className="text-sm text-[var(--danger)]" role="alert">
-          {error}
-        </p>
-      ) : null}
-
-      {success ? (
-        <p className="text-sm text-[var(--lime)]" role="status">
-          {success}
-        </p>
-      ) : null}
 
       <button
         type="submit"

@@ -13,3 +13,6 @@ email-validator==2.2.0
 
 # Supabase Auth (Admin API no back-end)
 supabase==2.11.0
+
+# Debug (breakpoints no Docker / VS Code / Cursor)
+debugpy==1.8.11

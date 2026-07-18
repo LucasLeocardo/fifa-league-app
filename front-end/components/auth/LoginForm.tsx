@@ -6,9 +6,10 @@ import { FormEvent, useState } from "react";
 
 import { ApiError, login } from "@/lib/api";
 import { useAuthStore } from "@/store/auth";
+import { useFlashStore } from "@/store/flash";
 
 const fieldClass =
-  "w-full border border-[var(--stroke)] bg-[rgba(4,17,12,0.55)] px-3.5 py-3 text-[var(--ink)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--muted)] focus:border-[var(--lime)] focus:shadow-[0_0_0_3px_rgba(200,245,66,0.12)]";
+  "w-full border border-[var(--stroke)] bg-[rgba(10,32,58,0.55)] px-3.5 py-3 text-[var(--ink)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--muted)] focus:border-[var(--lime)] focus:shadow-[0_0_0_3px_rgba(200,245,66,0.12)]";
 
 const labelClass =
   "mb-1.5 block text-xs font-medium uppercase tracking-[0.14em] text-[var(--muted)]";
@@ -16,18 +17,18 @@ const labelClass =
 export function LoginForm() {
   const router = useRouter();
   const setSession = useAuthStore((state) => state.setSession);
+  const flashSuccess = useFlashStore((s) => s.success);
+  const flashError = useFlashStore((s) => s.error);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setError(null);
 
     if (!email.trim() || !password) {
-      setError("Preencha email e senha para entrar.");
+      flashError("Preencha email e senha para entrar.");
       return;
     }
 
@@ -41,12 +42,13 @@ export function LoginForm() {
         isAdmin: session.isAdmin,
         coachName: session.coachName,
       });
+      flashSuccess("Login realizado com sucesso.");
       router.push("/home");
     } catch (err) {
       if (err instanceof ApiError) {
-        setError(err.message);
+        flashError(err.message);
       } else {
-        setError("Nao foi possivel entrar. Tente novamente.");
+        flashError("Nao foi possivel entrar. Tente novamente.");
       }
     } finally {
       setLoading(false);
@@ -88,12 +90,6 @@ export function LoginForm() {
           disabled={loading}
         />
       </div>
-
-      {error ? (
-        <p className="text-sm text-[var(--danger)]" role="alert">
-          {error}
-        </p>
-      ) : null}
 
       <button
         type="submit"

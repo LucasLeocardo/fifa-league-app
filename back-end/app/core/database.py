@@ -1,5 +1,6 @@
 """Engine e sessao assincrona do SQLAlchemy para o Postgres do Supabase."""
 
+import ssl
 from collections.abc import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import (
@@ -11,6 +12,20 @@ from sqlalchemy.ext.asyncio import (
 from app.core.config import settings
 
 
+def _build_ssl_arg() -> bool | ssl.SSLContext:
+    """Monta o argumento SSL do asyncpg.
+
+    Supabase exige TLS. Se db_ssl_verify=False (ex.: proxy corporativo com
+    certificado autoassinado), ainda usa SSL, mas sem validar a cadeia.
+    """
+    if settings.db_ssl_verify:
+        return True
+    context = ssl.create_default_context()
+    context.check_hostname = False
+    context.verify_mode = ssl.CERT_NONE
+    return context
+
+
 def _build_connect_args() -> dict:
     connect_args: dict = {
         # No pooler transacional (PgBouncer) prepared statements quebram;
@@ -18,8 +33,7 @@ def _build_connect_args() -> dict:
         "statement_cache_size": settings.db_statement_cache_size,
     }
     if settings.db_use_ssl:
-        # Supabase exige SSL; os certificados sao validos (verificacao padrao).
-        connect_args["ssl"] = True
+        connect_args["ssl"] = _build_ssl_arg()
     return connect_args
 
 

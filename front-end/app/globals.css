@@ -1,16 +1,16 @@
 @import "tailwindcss";
 
 :root {
-  --pitch-deep: #061510;
-  --pitch-mid: #0a2f22;
-  --pitch-line: rgba(200, 245, 66, 0.12);
-  --turf: #1a6b45;
+  --pitch-deep: #123458;
+  --pitch-mid: #1c4a75;
+  --pitch-line: rgba(160, 210, 255, 0.14);
+  --turf: #3d7eb8;
   --lime: #c8f542;
   --lime-dim: #9bc22e;
   --ink: #f2f7f0;
   --muted: rgba(242, 247, 240, 0.62);
-  --panel: rgba(8, 28, 20, 0.72);
-  --stroke: rgba(200, 245, 66, 0.22);
+  --panel: rgba(18, 48, 82, 0.72);
+  --stroke: rgba(160, 210, 255, 0.28);
   --danger: #ff6b6b;
   --background: var(--pitch-deep);
   --foreground: var(--ink);
@@ -49,6 +49,17 @@ body {
   font-family: var(--font-body), system-ui, sans-serif;
 }
 
+@keyframes flash-in {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @keyframes auth-rise {
   from {
     opacity: 0;
@@ -58,6 +69,10 @@ body {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+.flash-alert {
+  animation: flash-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 @keyframes auth-flare {
@@ -97,18 +112,18 @@ body {
   background:
     linear-gradient(
       115deg,
-      rgba(6, 21, 16, 0.92) 0%,
-      rgba(10, 47, 34, 0.75) 42%,
-      rgba(6, 21, 16, 0.95) 100%
+      rgba(18, 52, 88, 0.9) 0%,
+      rgba(36, 92, 148, 0.72) 42%,
+      rgba(16, 48, 82, 0.94) 100%
     ),
     repeating-linear-gradient(
       -12deg,
       transparent 0 18px,
       var(--pitch-line) 18px 19px
     ),
-    radial-gradient(ellipse 80% 55% at 70% 20%, rgba(200, 245, 66, 0.16), transparent 55%),
-    radial-gradient(ellipse 70% 50% at 15% 85%, rgba(26, 107, 69, 0.45), transparent 60%),
-    linear-gradient(180deg, #08261c, #04110c);
+    radial-gradient(ellipse 80% 55% at 70% 20%, rgba(130, 190, 255, 0.22), transparent 55%),
+    radial-gradient(ellipse 70% 50% at 15% 85%, rgba(56, 130, 190, 0.4), transparent 60%),
+    linear-gradient(180deg, #1a4a78, #0f2f52);
   background-size: auto, 80px 40px, auto, auto, auto;
   animation: pitch-drift 28s linear infinite;
 }
@@ -117,6 +132,7 @@ body {
   .auth-rise,
   .auth-rise-delay,
   .auth-flare,
+  .flash-alert,
   .pitch-atmosphere {
     animation: none;
   }

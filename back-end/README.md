@@ -9,7 +9,7 @@ pronta para rodar com **Docker**. O schema do banco está em
 - **FastAPI** + **Uvicorn**
 - **SQLAlchemy 2.0** (async) + **asyncpg**
 - **Pydantic v2** / **pydantic-settings** (configuração via `.env`)
-- **Supabase Auth** (Admin API via secret key, no back-end)
+- **Supabase Auth** (Admin API via service_role key, no back-end)
 - **Docker** / **docker-compose**
 
 ## Arquitetura em camadas
@@ -42,7 +42,7 @@ handlers* registrados no `main.py` (ex.: `NotFoundError` → 404,
 │   ├── core/
 │   │   ├── config.py           # Settings (lidas do .env)
 │   │   ├── database.py         # Engine async, sessão e dependência get_db
-│   │   ├── supabase.py         # Client Admin (secret key) para Auth
+│   │   ├── supabase.py         # Client Admin (service_role) para Auth
 │   │   └── exceptions.py       # Erros de domínio (NotFound, Conflict, Auth, ...)
 │   ├── models/                 # Modelos ORM (SQLAlchemy)
 │   │   ├── base.py
@@ -96,7 +96,8 @@ cp .env.example .env
 
 3. Em **Project Settings → API Keys**, preencha:
    - `SUPABASE_URL` — Project URL
-   - `SUPABASE_SECRET_KEY` — secret key `sb_secret_...` (**só no back-end**)
+   - `SUPABASE_SERVICE_ROLE_KEY` — chave legada `service_role` JWT `eyJ...` (**só no back-end**)
+     (o SDK Python atual exige formato JWT; a chave nova `sb_secret_...` ainda não serve)
 
 4. Em **Authentication → Providers → Email**, deixe **Confirm email** habilitado
    para o cadastro exigir confirmação antes do login.
@@ -104,6 +105,23 @@ cp .env.example .env
 ## Como rodar
 
 ### Com Docker (recomendado)
+
+```bash
+docker compose up --build
+```
+
+### Debug com breakpoints (Docker + Cursor)
+
+1. Suba a API no modo debug (espera o debugger conectar):
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.debug.yml up --build
+```
+
+2. No Cursor: **Run and Debug** → **Attach: FIFA League API (Docker)** (F5).
+3. Coloque breakpoints no código em `app/` e faça a request (Swagger ou front).
+
+Para voltar ao modo normal (com `--reload`):
 
 ```bash
 docker compose up --build
@@ -187,5 +205,5 @@ front é obrigatório. Sem o refresh token, a sessão não renova mais.
   `"authUserId"`). Os modelos ORM já fazem esse mapeamento para snake_case.
 - O schema é gerenciado pelo SQL em `database/` (aplicado no Supabase), então a
   API **não** cria tabelas no startup.
-- A **secret key** (`sb_secret_...`) bypassa RLS e tem poder total no Auth —
+- A **service_role key** (JWT `eyJ...`) bypassa RLS e tem poder total no Auth —
   nunca a coloque no front-end nem em repositório público.

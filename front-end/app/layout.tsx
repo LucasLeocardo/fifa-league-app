@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import { Bebas_Neue, Outfit } from "next/font/google";
+
+import { FlashAlert } from "@/components/FlashAlert";
+
 import "./globals.css";
 
 const display = Bebas_Neue({
@@ -25,7 +28,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" className={`${display.variable} ${body.variable} h-full`}>
-      <body className="min-h-full antialiased">{children}</body>
+      <body className="min-h-full antialiased">
+        <FlashAlert />
+        {children}
+      </body>
     </html>
   );
 }
