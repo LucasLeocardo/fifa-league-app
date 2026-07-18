@@ -1,0 +1,123 @@
+@import "tailwindcss";
+
+:root {
+  --pitch-deep: #061510;
+  --pitch-mid: #0a2f22;
+  --pitch-line: rgba(200, 245, 66, 0.12);
+  --turf: #1a6b45;
+  --lime: #c8f542;
+  --lime-dim: #9bc22e;
+  --ink: #f2f7f0;
+  --muted: rgba(242, 247, 240, 0.62);
+  --panel: rgba(8, 28, 20, 0.72);
+  --stroke: rgba(200, 245, 66, 0.22);
+  --danger: #ff6b6b;
+  --background: var(--pitch-deep);
+  --foreground: var(--ink);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-pitch-deep: var(--pitch-deep);
+  --color-pitch-mid: var(--pitch-mid);
+  --color-turf: var(--turf);
+  --color-lime: var(--lime);
+  --color-lime-dim: var(--lime-dim);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-panel: var(--panel);
+  --color-stroke: var(--stroke);
+  --color-danger: var(--danger);
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-body), system-ui, sans-serif;
+}
+
+@keyframes auth-rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes auth-flare {
+  from {
+    opacity: 0;
+    transform: scaleX(0.4);
+  }
+  to {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+
+@keyframes pitch-drift {
+  from {
+    background-position: 0 0, 0 0;
+  }
+  to {
+    background-position: 80px 40px, 0 0;
+  }
+}
+
+.auth-rise {
+  animation: auth-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.auth-rise-delay {
+  animation: auth-rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both;
+}
+
+.auth-flare {
+  transform-origin: left center;
+  animation: auth-flare 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both;
+}
+
+.pitch-atmosphere {
+  background:
+    linear-gradient(
+      115deg,
+      rgba(6, 21, 16, 0.92) 0%,
+      rgba(10, 47, 34, 0.75) 42%,
+      rgba(6, 21, 16, 0.95) 100%
+    ),
+    repeating-linear-gradient(
+      -12deg,
+      transparent 0 18px,
+      var(--pitch-line) 18px 19px
+    ),
+    radial-gradient(ellipse 80% 55% at 70% 20%, rgba(200, 245, 66, 0.16), transparent 55%),
+    radial-gradient(ellipse 70% 50% at 15% 85%, rgba(26, 107, 69, 0.45), transparent 60%),
+    linear-gradient(180deg, #08261c, #04110c);
+  background-size: auto, 80px 40px, auto, auto, auto;
+  animation: pitch-drift 28s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-rise,
+  .auth-rise-delay,
+  .auth-flare,
+  .pitch-atmosphere {
+    animation: none;
+  }
+}
