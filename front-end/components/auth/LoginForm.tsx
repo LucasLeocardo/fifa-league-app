@@ -1,19 +1,28 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
+
+import { ApiError, login } from "@/lib/api";
+import { useAuthStore } from "@/store/auth";
 
 const fieldClass =
   "w-full border border-[var(--stroke)] bg-[rgba(4,17,12,0.55)] px-3.5 py-3 text-[var(--ink)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--muted)] focus:border-[var(--lime)] focus:shadow-[0_0_0_3px_rgba(200,245,66,0.12)]";
 
-const labelClass = "mb-1.5 block text-xs font-medium uppercase tracking-[0.14em] text-[var(--muted)]";
+const labelClass =
+  "mb-1.5 block text-xs font-medium uppercase tracking-[0.14em] text-[var(--muted)]";
 
 export function LoginForm() {
+  const router = useRouter();
+  const setSession = useAuthStore((state) => state.setSession);
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
 
@@ -22,8 +31,26 @@ export function LoginForm() {
       return;
     }
 
-    // Integração com POST /api/v1/auth/login virá na próxima etapa.
-    setError("API de login ainda não conectada. Em breve.");
+    setLoading(true);
+    try {
+      const session = await login(email.trim(), password);
+      setSession({
+        accessToken: session.accessToken,
+        refreshToken: session.refreshToken,
+        name: session.name,
+        isAdmin: session.isAdmin,
+        coachName: session.coachName,
+      });
+      router.push("/home");
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message);
+      } else {
+        setError("Nao foi possivel entrar. Tente novamente.");
+      }
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -41,6 +68,7 @@ export function LoginForm() {
           onChange={(e) => setEmail(e.target.value)}
           className={fieldClass}
           placeholder="voce@email.com"
+          disabled={loading}
         />
       </div>
 
@@ -57,6 +85,7 @@ export function LoginForm() {
           onChange={(e) => setPassword(e.target.value)}
           className={fieldClass}
           placeholder="••••••••"
+          disabled={loading}
         />
       </div>
 
@@ -68,9 +97,10 @@ export function LoginForm() {
 
       <button
         type="submit"
-        className="mt-1 w-full bg-[var(--lime)] px-4 py-3.5 font-[family-name:var(--font-display)] text-xl tracking-wide text-[var(--pitch-deep)] transition-[transform,background-color] hover:bg-[var(--lime-dim)] active:scale-[0.99]"
+        disabled={loading}
+        className="mt-1 w-full bg-[var(--lime)] px-4 py-3.5 font-[family-name:var(--font-display)] text-xl tracking-wide text-[var(--pitch-deep)] transition-[transform,background-color,opacity] hover:bg-[var(--lime-dim)] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
       >
-        Entrar
+        {loading ? "Entrando..." : "Entrar"}
       </button>
 
       <Link
