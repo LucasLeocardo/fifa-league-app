@@ -18,13 +18,13 @@ router = APIRouter()
 @router.post(
     "/register",
     status_code=status.HTTP_201_CREATED,
-    summary="Cadastra um usuario (Auth + User)",
+    summary="Ativa conta Auth para um User pre-cadastrado",
 )
 async def register(payload: RegisterRequest, service: AuthServiceDep) -> UserRead:
-    """Cria o usuario no Supabase Auth e o registro na tabela User.
+    """Vincula Auth a um registro User ja existente (email autorizado).
 
-    O email de confirmacao e enviado pelo Supabase. Ate confirmar, o login
-    permanece bloqueado. A senha nao e persistida na tabela User.
+    Exige que o email exista na tabela User com authUserId vazio. Cria o
+    usuario no Supabase Auth, preenche authUserId e envia confirmacao de email.
     """
     return await service.register(payload)
 
@@ -36,9 +36,9 @@ async def register(payload: RegisterRequest, service: AuthServiceDep) -> UserRea
 async def login(payload: LoginRequest, service: AuthServiceDep) -> LoginResponse:
     """Valida email/senha no Supabase Auth e confere a existencia na tabela User.
 
-    Em sucesso, retorna accessToken, refreshToken e isAdmin. O front deve
-    enviar o accessToken no header Authorization: Bearer nas rotas protegidas
-    e guardar o refreshToken para renovar a sessao.
+    Em sucesso, retorna accessToken, refreshToken, isAdmin, name e coachName.
+    O front deve enviar o accessToken no header Authorization: Bearer nas rotas
+    protegidas e guardar o refreshToken para renovar a sessao.
     """
     return await service.login(payload)
 

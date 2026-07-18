@@ -48,13 +48,17 @@ class AuthService:
         self._supabase = get_supabase_admin()
 
     async def register(self, data: RegisterRequest) -> User:
-        """Cria usuario no Auth (email nao confirmado) e insere na tabela User.
+        """Ativa conta Auth para um User ja pre-cadastrado no banco.
 
-        O email de confirmacao e disparado via resend (create_user Admin nao
-        envia email sozinho). O login so funciona apos a confirmacao.
+        So permite cadastro se o email existir na tabela User e o authUserId
+        ainda estiver vazio. Cria o usuario no Supabase Auth, vincula o
+        authUserId e envia o email de confirmacao.
         """
-        if await self.repository.get_by_email(str(data.email)) is not None:
-            raise ConflictError("Ja existe um usuario com esse email.")
+        user = await self.repository.get_by_email(str(data.email))
+        if user is None:
+            raise NotFoundError("Email nao autorizado para cadastro.")
+        if user.auth_user_id is not None:
+            raise ConflictError("Este email ja possui uma conta ativa.")
 
         auth_user_id = self._create_auth_user(data)
 
@@ -62,19 +66,14 @@ class AuthService:
             # create_user Admin nao envia o email; reenvia o de confirmacao.
             self._send_confirmation_email(str(data.email))
         except Exception:
-            # Usuario Auth ja existe; ainda assim gravamos a User. O front pode
-            # pedir reenvio depois se o email nao chegar.
             logger.exception(
                 "Falha ao enviar email de confirmacao para %s", data.email
             )
 
-        user = User(
-            auth_user_id=auth_user_id,
-            name=data.name,
-            email=str(data.email),
-        )
+        user.auth_user_id = auth_user_id
+        user.name = data.name
         try:
-            return await self.repository.add(user)
+            return await self.repository.save(user)
         except Exception:
             self._delete_auth_user(auth_user_id)
             raise
@@ -91,6 +90,8 @@ class AuthService:
             access_token=access_token,
             refresh_token=refresh_token,
             is_admin=user.is_admin,
+            name=user.name,
+            coach_name=user.coach_name,
         )
 
     async def refresh(self, data: RefreshRequest) -> RefreshResponse:

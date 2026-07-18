@@ -53,7 +53,7 @@ handlers* registrados no `main.py` (ex.: `NotFoundError` → 404,
 │   ├── repositories/           # Camada de dados (acesso ao banco)
 │   │   └── user.py
 │   ├── services/               # Camada de negócio (regras/validações)
-│   │   └── auth.py             # Cadastro: Auth + insert User
+│   │   └── auth.py             # Cadastro: Auth + vínculo no User pré-cadastrado
 │   └── api/
 │       ├── deps.py             # Injeção de dependências (sessão, repo, serviço)
 │       └── v1/
@@ -67,10 +67,11 @@ handlers* registrados no `main.py` (ex.: `NotFoundError` → 404,
 └── .env.example
 ```
 
-> O cadastro de usuário passa por **Auth** (`/api/v1/auth/register`). Modelo,
-> repositório e schema `UserRead` permanecem para persistir/retornar o perfil
-> na tabela `"User"`. Para as demais tabelas (`Player`, `Team`, `Match`, ...),
-> basta replicar o mesmo padrão em cada camada.
+> O cadastro exige um **User pré-cadastrado** na tabela (email autorizado,
+> `authUserId` vazio). O endpoint `/api/v1/auth/register` cria o Auth e vincula
+> o `authUserId`. Modelo, repositório e schema `UserRead` permanecem para
+> persistir/retornar o perfil. Para as demais tabelas (`Player`, `Team`,
+> `Match`, ...), basta replicar o mesmo padrão em cada camada.
 
 ## Configuração
 
@@ -125,18 +126,23 @@ A API sobe em `http://localhost:8000`.
 - `GET /docs` — Swagger UI (documentação interativa)
 - `GET /api/v1/health` — liveness
 - `GET /api/v1/health/db` — testa a conexão com o Supabase
-- `POST /api/v1/auth/register` — cadastro (Auth + User); body: `email`, `password`, `name`
-- `POST /api/v1/auth/login` — login; body: `email`, `password`; resposta: `accessToken`, `refreshToken`, `isAdmin`
+- `POST /api/v1/auth/register` — ativa Auth para User pré-cadastrado; body: `email`, `password`, `name`
+- `POST /api/v1/auth/login` — login; body: `email`, `password`; resposta: `accessToken`, `refreshToken`, `isAdmin`, `name`, `coachName`
 - `POST /api/v1/auth/refresh` — renova tokens; body: `refreshToken`; resposta: `accessToken`, `refreshToken`
 - `POST /api/v1/auth/logout` — encerra sessão; header: `Authorization: Bearer <accessToken>`
 
 ### Cadastro (`POST /api/v1/auth/register`)
 
-1. Cria o usuário no **Supabase Auth** (`email_confirm=false`).
-2. Dispara o email de confirmação.
-3. Insere o registro na tabela **`User`** com `authUserId`.
-4. Retorna `201` com os dados do User (sem senha e sem tokens).
+Pré-requisito: o email já deve existir na tabela **`User`** com `authUserId`
+nulo (você cadastra o convidado antes no banco).
 
+1. Confere se o email existe e se `authUserId` está vazio.
+2. Cria o usuário no **Supabase Auth** (`email_confirm=false`).
+3. Dispara o email de confirmação.
+4. Atualiza o **`User`** com o `authUserId` (e o `name` enviado).
+5. Retorna `201` com os dados do User (sem senha e sem tokens).
+
+Email não autorizado → `404`. Email já com conta ativa → `409`.
 Até confirmar o email, o login permanece bloqueado pelo Auth. A senha fica
 somente no Auth, nunca na tabela `User`.
 
@@ -144,7 +150,7 @@ somente no Auth, nunca na tabela `User`.
 
 1. Autentica email/senha no **Supabase Auth**.
 2. Busca o registro correspondente na tabela **`User`** pelo `authUserId`.
-3. Em sucesso, retorna `{ "accessToken": "...", "refreshToken": "...", "isAdmin": false }`.
+3. Em sucesso, retorna `{ "accessToken": "...", "refreshToken": "...", "isAdmin": false, "name": "...", "coachName": "..." }`.
 
 Nas rotas protegidas, o front envia `Authorization: Bearer <accessToken>`. A
 dependência `CurrentUserDep` valida o JWT no Supabase Auth e confere se o

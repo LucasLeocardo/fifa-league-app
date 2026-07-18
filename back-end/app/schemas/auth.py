@@ -12,7 +12,7 @@ class _CamelModel(BaseModel):
 
 
 class RegisterRequest(_CamelModel):
-    """Payload de cadastro: cria Auth + registro na tabela User."""
+    """Payload de cadastro: ativa Auth para um User pre-cadastrado."""
 
     email: EmailStr
     password: str = Field(..., min_length=8, max_length=72)
@@ -32,6 +32,8 @@ class LoginResponse(_CamelModel):
     access_token: str
     refresh_token: str
     is_admin: bool
+    name: str
+    coach_name: str | None = None
 
 
 class RefreshRequest(_CamelModel):
