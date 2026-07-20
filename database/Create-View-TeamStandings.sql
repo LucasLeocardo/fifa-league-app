@@ -6,13 +6,14 @@
 --   SELECT *
 --   FROM "TeamStandings"
 --   WHERE "cycleSeasonId" = '<uuid>'
---   ORDER BY "points" DESC, "goalDifference" DESC, "goalsFor" DESC, "wins" DESC;
+--   ORDER BY "points" DESC, "wins" DESC, "goalDifference" DESC;
 --
 -- Premissas:
 --   * Match.homeTeamId / awayTeamId apontam para TeamCycleSeason.id
---   * So entram partidas com homeScore e awayScore preenchidos
+--   * So entram partidas de liga (Turno 1 e 2) com placar preenchido
 --   * Vitoria = 3 pts, empate = 1 pt, derrota = 0 pt
 --   * Times sem jogos aparecem com zeros
+--   * A ordenacao fica a cargo do consumidor (API / query)
 -- =============================================================================
 
 CREATE OR REPLACE VIEW "TeamStandings" AS
@@ -24,7 +25,10 @@ WITH "PlayedMatch" AS (
         m."homeScore",
         m."awayScore"
     FROM "Match" m
-    WHERE m."homeScore" IS NOT NULL
+    JOIN "MatchType" mt
+        ON mt."id" = m."typeId"
+    WHERE mt."name" IN ('Fase de liga (Turno 1)', 'Fase de liga (Turno 2)')
+      AND m."homeScore" IS NOT NULL
       AND m."awayScore" IS NOT NULL
       AND m."homeTeamId" IS NOT NULL
       AND m."awayTeamId" IS NOT NULL
