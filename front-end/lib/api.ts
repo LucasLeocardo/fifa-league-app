@@ -38,6 +38,13 @@ export type StandingsResponse = {
   standings: TeamStanding[];
 };
 
+export type CycleSeason = {
+  cycleSeasonId: string;
+  cycleName: string;
+  seasonName: string;
+  isCurrentSeason: boolean;
+};
+
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -147,6 +154,19 @@ export function getStandings(
     ? `?cycleSeasonId=${encodeURIComponent(cycleSeasonId)}`
     : "";
   return request<StandingsResponse>(`/api/v1/standings${query}`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+}
+
+/**
+ * Lista todas as CycleSeasons (com nome do ciclo e da temporada). A temporada
+ * atual e a que possui isCurrentSeason igual a true (endDate nulo no back-end).
+ */
+export function getCycleSeasons(accessToken: string): Promise<CycleSeason[]> {
+  return request<CycleSeason[]>("/api/v1/cycle-seasons", {
     method: "GET",
     headers: {
       Authorization: `Bearer ${accessToken}`,

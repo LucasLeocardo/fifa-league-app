@@ -4,10 +4,12 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import { DataTable, type DataTableColumn } from "@/components/DataTable";
+import { Select, type SelectOption } from "@/components/Select";
 import {
   ApiError,
+  getCycleSeasons,
   getStandings,
-  logout as logoutRequest,
+  type CycleSeason,
   type TeamStanding,
 } from "@/lib/api";
 import { useAuthStore } from "@/store/auth";
@@ -60,14 +62,13 @@ export function StandingsClient() {
   const router = useRouter();
   const accessToken = useAuthStore((s) => s.accessToken);
   const name = useAuthStore((s) => s.name);
-  const clearSession = useAuthStore((s) => s.clearSession);
-  const flashSuccess = useFlashStore((s) => s.success);
   const flashError = useFlashStore((s) => s.error);
 
   const [hydrated, setHydrated] = useState(false);
+  const [cycleSeasons, setCycleSeasons] = useState<CycleSeason[]>([]);
+  const [selectedCycleSeasonId, setSelectedCycleSeasonId] = useState("");
   const [standings, setStandings] = useState<TeamStanding[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
     const markHydrated = () => setHydrated(true);
@@ -80,9 +81,10 @@ export function StandingsClient() {
   }, []);
 
   const loadStandings = useCallback(
-    async (token: string) => {
+    async (token: string, cycleSeasonId?: string) => {
+      setLoading(true);
       try {
-        const response = await getStandings(token);
+        const response = await getStandings(token, cycleSeasonId);
         setStandings(response.standings);
       } catch (err) {
         if (err instanceof ApiError) {
@@ -97,6 +99,28 @@ export function StandingsClient() {
     [flashError],
   );
 
+  const loadSeasonsAndStandings = useCallback(
+    async (token: string) => {
+      // Temporada selecionada por padrao: a que tem isCurrentSeason = true.
+      let initialId: string | undefined;
+      try {
+        const seasons = await getCycleSeasons(token);
+        setCycleSeasons(seasons);
+        const current = seasons.find((season) => season.isCurrentSeason);
+        initialId = current?.cycleSeasonId ?? seasons[0]?.cycleSeasonId;
+        setSelectedCycleSeasonId(initialId ?? "");
+      } catch (err) {
+        if (err instanceof ApiError) {
+          flashError(err.message);
+        } else {
+          flashError("Nao foi possivel carregar as temporadas.");
+        }
+      }
+      await loadStandings(token, initialId);
+    },
+    [flashError, loadStandings],
+  );
+
   useEffect(() => {
     if (!hydrated) return;
     if (!accessToken) {
@@ -108,69 +132,65 @@ export function StandingsClient() {
     const token = accessToken;
     // Defere para um callback: evita setState sincrono no corpo do effect.
     queueMicrotask(() => {
-      if (active) void loadStandings(token);
+      if (active) void loadSeasonsAndStandings(token);
     });
 
     return () => {
       active = false;
     };
-  }, [hydrated, accessToken, router, loadStandings]);
+  }, [hydrated, accessToken, router, loadSeasonsAndStandings]);
 
-  async function handleLogout() {
-    setLoggingOut(true);
-    try {
-      if (accessToken) {
-        await logoutRequest(accessToken);
-      }
-      flashSuccess("Sessao encerrada.");
-    } catch (err) {
-      if (err instanceof ApiError) {
-        flashError(err.message);
-      } else {
-        flashError("Nao foi possivel encerrar no servidor. Sessao local limpa.");
-      }
-    } finally {
-      clearSession();
-      setLoggingOut(false);
-      router.replace("/login");
+  function handleSeasonChange(id: string) {
+    setSelectedCycleSeasonId(id);
+    if (accessToken) {
+      void loadStandings(accessToken, id || undefined);
     }
   }
 
+  const seasonOptions: SelectOption[] = cycleSeasons.map((season) => ({
+    value: season.cycleSeasonId,
+    label: `${season.cycleName} - ${season.seasonName}`,
+  }));
+
   if (!hydrated || !accessToken) {
     return (
-      <main className="pitch-atmosphere flex min-h-dvh items-center justify-center px-6">
+      <div className="flex min-h-[60vh] items-center justify-center px-6">
         <p className="text-[var(--muted)]">Carregando...</p>
-      </main>
+      </div>
     );
   }
 
   return (
-    <main className="pitch-atmosphere min-h-dvh px-6 py-10 md:px-10">
+    <div className="px-6 py-10 md:px-10">
       <div className="mx-auto w-full max-w-4xl">
-        <header className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="font-[family-name:var(--font-display)] text-sm tracking-[0.3em] text-[var(--lime)]">
-              FIFA LEAGUE
-            </p>
-            <h1 className="mt-2 font-[family-name:var(--font-display)] text-4xl tracking-wide text-[var(--ink)] md:text-5xl">
-              Classificação
-            </h1>
-            <p className="mt-1 text-sm text-[var(--muted)]">
-              Ola, {name} · temporada atual
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleLogout}
-            disabled={loggingOut}
-            className="border border-[var(--stroke)] px-4 py-2.5 text-sm font-medium text-[var(--ink)] transition-colors hover:border-[var(--lime)] hover:text-[var(--lime)] disabled:opacity-60"
-          >
-            {loggingOut ? "Saindo..." : "Sair"}
-          </button>
+        <header>
+          <h1 className="font-[family-name:var(--font-display)] text-4xl tracking-wide text-[var(--ink)] md:text-5xl">
+            Classificação
+          </h1>
+          <p className="mt-1 text-sm text-[var(--muted)]">
+            Ola, {name} · temporada atual
+          </p>
         </header>
 
-        <div className="mt-8">
+        <div className="mt-8 flex flex-wrap items-center gap-3">
+          <span
+            id="cycleSeasonLabel"
+            className="text-sm font-medium text-[var(--muted)]"
+          >
+            Temporada
+          </span>
+          <Select
+            aria-label="Selecionar temporada"
+            options={seasonOptions}
+            value={selectedCycleSeasonId}
+            onChange={handleSeasonChange}
+            disabled={loading || seasonOptions.length === 0}
+            placeholder="Selecione a temporada"
+            className="w-64"
+          />
+        </div>
+
+        <div className="mt-4">
           <DataTable
             columns={columns}
             data={standings}
@@ -186,6 +206,6 @@ export function StandingsClient() {
           GP: gols pro · GC: gols contra · SG: saldo de gols
         </p>
       </div>
-    </main>
+    </div>
   );
 }

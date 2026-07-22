@@ -1,6 +1,13 @@
 "use client";
 
-import type { ReactNode } from "react";
+import {
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+  type ColumnDef,
+  type RowData,
+} from "@tanstack/react-table";
+import { useMemo, type ReactNode } from "react";
 
 import { Loading } from "@/components/Loading";
 
@@ -41,6 +48,17 @@ type DataTableProps<T> = {
   className?: string;
 };
 
+// Metadados por coluna repassados ao TanStack Table (estilo/visual).
+declare module "@tanstack/react-table" {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  interface ColumnMeta<TData extends RowData, TValue> {
+    align?: ColumnAlign;
+    cellClassName?: string;
+    headerClassName?: string;
+    width?: string;
+  }
+}
+
 const alignClass: Record<ColumnAlign, string> = {
   left: "text-left",
   center: "text-center",
@@ -61,7 +79,8 @@ function resolveCell<T>(
 
 /**
  * Tabela generica reutilizavel com o visual da FIFA League.
- * Configure as colunas via `columns` e passe os dados em `data`.
+ * Usa TanStack Table (@tanstack/react-table) internamente, mantendo uma
+ * API simples via `columns`/`data`.
  */
 export function DataTable<T>({
   columns,
@@ -74,6 +93,30 @@ export function DataTable<T>({
   onRowClick,
   className,
 }: Readonly<DataTableProps<T>>) {
+  const columnDefs = useMemo<ColumnDef<T>[]>(
+    () =>
+      columns.map((column) => ({
+        id: column.key,
+        header: () => column.header,
+        cell: (info) =>
+          resolveCell(column, info.row.original, info.row.index),
+        meta: {
+          align: column.align,
+          cellClassName: column.cellClassName,
+          headerClassName: column.headerClassName,
+          width: column.width,
+        },
+      })),
+    [columns],
+  );
+
+  const table = useReactTable({
+    data,
+    columns: columnDefs,
+    getCoreRowModel: getCoreRowModel(),
+    getRowId: (row, index) => String(getRowKey(row, index)),
+  });
+
   const wrapperClass = [
     "w-full overflow-x-auto border border-[var(--stroke)] bg-[var(--panel)] backdrop-blur-md",
     className ?? "",
@@ -105,10 +148,14 @@ export function DataTable<T>({
     }
 
     const interactive = Boolean(onRowClick);
-    return data.map((row, index) => (
+    return table.getRowModel().rows.map((row) => (
       <tr
-        key={getRowKey(row, index)}
-        onClick={interactive ? () => onRowClick?.(row, index) : undefined}
+        key={row.id}
+        onClick={
+          interactive
+            ? () => onRowClick?.(row.original, row.index)
+            : undefined
+        }
         className={[
           "border-b border-[var(--stroke)]/50 transition-colors last:border-b-0",
           interactive ? "cursor-pointer hover:bg-[rgba(200,245,66,0.06)]" : "",
@@ -116,20 +163,23 @@ export function DataTable<T>({
           .join(" ")
           .trim()}
       >
-        {columns.map((column) => (
-          <td
-            key={column.key}
-            className={[
-              "px-3 py-3 text-[var(--ink)]",
-              alignClass[column.align ?? "left"],
-              column.cellClassName ?? "",
-            ]
-              .join(" ")
-              .trim()}
-          >
-            {resolveCell(column, row, index)}
-          </td>
-        ))}
+        {row.getVisibleCells().map((cell) => {
+          const meta = cell.column.columnDef.meta;
+          return (
+            <td
+              key={cell.id}
+              className={[
+                "px-3 py-3 text-[var(--ink)]",
+                alignClass[meta?.align ?? "left"],
+                meta?.cellClassName ?? "",
+              ]
+                .join(" ")
+                .trim()}
+            >
+              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+            </td>
+          );
+        })}
       </tr>
     ));
   }
@@ -138,24 +188,37 @@ export function DataTable<T>({
     <div className={wrapperClass}>
       <table className="w-full border-collapse text-sm">
         <thead>
-          <tr className="border-b border-[var(--stroke)]">
-            {columns.map((column) => (
-              <th
-                key={column.key}
-                scope="col"
-                style={column.width ? { width: column.width } : undefined}
-                className={[
-                  "px-3 py-3 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--muted)]",
-                  alignClass[column.align ?? "left"],
-                  column.headerClassName ?? "",
-                ]
-                  .join(" ")
-                  .trim()}
-              >
-                {column.header}
-              </th>
-            ))}
-          </tr>
+          {table.getHeaderGroups().map((headerGroup) => (
+            <tr
+              key={headerGroup.id}
+              className="border-b border-[var(--stroke)]"
+            >
+              {headerGroup.headers.map((header) => {
+                const meta = header.column.columnDef.meta;
+                return (
+                  <th
+                    key={header.id}
+                    scope="col"
+                    style={meta?.width ? { width: meta.width } : undefined}
+                    className={[
+                      "px-3 py-3 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--muted)]",
+                      alignClass[meta?.align ?? "left"],
+                      meta?.headerClassName ?? "",
+                    ]
+                      .join(" ")
+                      .trim()}
+                  >
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext(),
+                        )}
+                  </th>
+                );
+              })}
+            </tr>
+          ))}
         </thead>
         <tbody>{renderBody()}</tbody>
       </table>

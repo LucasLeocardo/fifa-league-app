@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
-import { Bebas_Neue, Outfit } from "next/font/google";
+import { Bebas_Neue, Outfit, Geist } from "next/font/google";
 
 import { FlashAlert } from "@/components/FlashAlert";
 
 import "./globals.css";
+import { cn } from "@/lib/utils";
+
+const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 const display = Bebas_Neue({
   weight: "400",
@@ -27,7 +30,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR" className={`${display.variable} ${body.variable} h-full`}>
+    <html lang="pt-BR" className={cn("h-full", display.variable, body.variable, "font-sans", geist.variable)}>
       <body className="min-h-full antialiased">
         <FlashAlert />
         {children}
