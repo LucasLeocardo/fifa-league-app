@@ -43,7 +43,7 @@ export function LoginForm() {
         coachName: session.coachName,
       });
       flashSuccess("Login realizado com sucesso.");
-      router.push("/home");
+      router.push("/standings");
     } catch (err) {
       if (err instanceof ApiError) {
         flashError(err.message);

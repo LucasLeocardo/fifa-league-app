@@ -17,6 +17,27 @@ export type RegisterResponse = {
   createdAt: string;
 };
 
+export type TeamStanding = {
+  teamCycleSeasonId: string;
+  cycleSeasonId: string;
+  teamId: string;
+  teamName: string;
+  userId: string;
+  coachName: string | null;
+  points: number;
+  wins: number;
+  draws: number;
+  losses: number;
+  goalsFor: number;
+  goalsAgainst: number;
+  goalDifference: number;
+};
+
+export type StandingsResponse = {
+  cycleSeasonId: string;
+  standings: TeamStanding[];
+};
+
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -108,6 +129,25 @@ export function register(
 export function logout(accessToken: string): Promise<void> {
   return request<void>("/api/v1/auth/logout", {
     method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+}
+
+/**
+ * Classificacao do torneio. Sem cycleSeasonId, o back-end usa a temporada
+ * aberta (CycleSeason com endDate nulo).
+ */
+export function getStandings(
+  accessToken: string,
+  cycleSeasonId?: string,
+): Promise<StandingsResponse> {
+  const query = cycleSeasonId
+    ? `?cycleSeasonId=${encodeURIComponent(cycleSeasonId)}`
+    : "";
+  return request<StandingsResponse>(`/api/v1/standings${query}`, {
+    method: "GET",
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },

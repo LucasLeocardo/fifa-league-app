@@ -14,6 +14,7 @@ from app.repositories.cycle_season import CycleSeasonRepository
 from app.repositories.team_standing import TeamStandingRepository
 from app.repositories.user import UserRepository
 from app.services.auth import AuthService
+from app.services.cycle_season import CycleSeasonService
 from app.services.team_standing import TeamStandingService
 
 # Sessao de banco por request (camada de conexao).
@@ -33,6 +34,14 @@ def get_cycle_season_repository(db: DbSession) -> CycleSeasonRepository:
 
 def get_team_standing_repository(db: DbSession) -> TeamStandingRepository:
     return TeamStandingRepository(db)
+
+
+def get_cycle_season_service(
+    repository: Annotated[
+        CycleSeasonRepository, Depends(get_cycle_season_repository)
+    ],
+) -> CycleSeasonService:
+    return CycleSeasonService(repository)
 
 
 def get_auth_service(
@@ -69,6 +78,9 @@ async def get_current_user(
 
 
 AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
+CycleSeasonServiceDep = Annotated[
+    CycleSeasonService, Depends(get_cycle_season_service)
+]
 TeamStandingServiceDep = Annotated[
     TeamStandingService, Depends(get_team_standing_service)
 ]
