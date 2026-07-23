@@ -18,6 +18,7 @@ type AuthStore = {
   coachName: string | null;
   numberOfTitles: number;
   setSession: (session: AuthSession) => void;
+  setTokens: (accessToken: string, refreshToken: string) => void;
   clearSession: () => void;
 };
 
@@ -43,6 +44,8 @@ export const useAuthStore = create<AuthStore>()(
           coachName: session.coachName,
           numberOfTitles: session.numberOfTitles,
         }),
+      setTokens: (accessToken, refreshToken) =>
+        set({ accessToken, refreshToken }),
       clearSession: () => set({ ...emptySession }),
     }),
     {

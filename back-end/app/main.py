@@ -13,6 +13,7 @@ from app.core.exceptions import (
     AuthProviderError,
     BadRequestError,
     ConflictError,
+    ForbiddenError,
     NotFoundError,
     UnauthorizedError,
 )
@@ -83,6 +84,12 @@ def _register_exception_handlers(app: FastAPI) -> None:
     async def _handle_unauthorized(_: Request, exc: UnauthorizedError) -> JSONResponse:
         return JSONResponse(
             status_code=status.HTTP_401_UNAUTHORIZED, content={"detail": exc.message}
+        )
+
+    @app.exception_handler(ForbiddenError)
+    async def _handle_forbidden(_: Request, exc: ForbiddenError) -> JSONResponse:
+        return JSONResponse(
+            status_code=status.HTTP_403_FORBIDDEN, content={"detail": exc.message}
         )
 
     @app.exception_handler(AuthProviderError)

@@ -107,6 +107,11 @@ export type Position = {
   code: string;
 };
 
+export type RefreshResponse = {
+  accessToken: string;
+  refreshToken: string;
+};
+
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -154,9 +159,82 @@ async function readErrorMessage(response: Response): Promise<string> {
   return "Erro inesperado na API.";
 }
 
+function hasAuthorizationHeader(headers: HeadersInit | undefined): boolean {
+  if (!headers) return false;
+  if (headers instanceof Headers) {
+    return Boolean(headers.get("Authorization") ?? headers.get("authorization"));
+  }
+  if (Array.isArray(headers)) {
+    return headers.some(([key]) => key.toLowerCase() === "authorization");
+  }
+  const record = headers as Record<string, string>;
+  return Boolean(record.Authorization ?? record.authorization);
+}
+
+function withAccessToken(
+  headers: HeadersInit | undefined,
+  accessToken: string,
+): HeadersInit {
+  return {
+    ...((headers as Record<string, string> | undefined) ?? {}),
+    Authorization: `Bearer ${accessToken}`,
+  };
+}
+
+type RequestOptions = {
+  /** Evita loop de refresh (retry ja feito ou rota de auth). */
+  skipAuthRetry?: boolean;
+};
+
+let refreshInFlight: Promise<RefreshResponse> | null = null;
+
+async function refreshSessionTokens(): Promise<RefreshResponse> {
+  const { useAuthStore } = await import("@/store/auth");
+  const { refreshToken, setTokens, clearSession } = useAuthStore.getState();
+
+  if (!refreshToken) {
+    clearSession();
+    throw new ApiError(401, "Sessao expirada. Faca login novamente.");
+  }
+
+  if (!refreshInFlight) {
+    refreshInFlight = (async () => {
+      try {
+        const response = await fetch(`${getApiBaseUrl()}/api/v1/auth/refresh`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refreshToken }),
+        });
+        if (!response.ok) {
+          throw new ApiError(response.status, await readErrorMessage(response));
+        }
+        const tokens = (await response.json()) as RefreshResponse;
+        setTokens(tokens.accessToken, tokens.refreshToken);
+        return tokens;
+      } catch (err) {
+        clearSession();
+        throw err;
+      } finally {
+        refreshInFlight = null;
+      }
+    })();
+  }
+
+  return refreshInFlight;
+}
+
+function isAuthPath(path: string): boolean {
+  return (
+    path.startsWith("/api/v1/auth/login") ||
+    path.startsWith("/api/v1/auth/register") ||
+    path.startsWith("/api/v1/auth/refresh")
+  );
+}
+
 async function request<T>(
   path: string,
   init?: RequestInit,
+  options?: RequestOptions,
 ): Promise<T> {
   const response = await fetch(`${getApiBaseUrl()}${path}`, {
     ...init,
@@ -165,6 +243,23 @@ async function request<T>(
       ...init?.headers,
     },
   });
+
+  if (
+    response.status === 401 &&
+    !options?.skipAuthRetry &&
+    !isAuthPath(path) &&
+    hasAuthorizationHeader(init?.headers)
+  ) {
+    const tokens = await refreshSessionTokens();
+    return request<T>(
+      path,
+      {
+        ...init,
+        headers: withAccessToken(init?.headers, tokens.accessToken),
+      },
+      { skipAuthRetry: true },
+    );
+  }
 
   if (!response.ok) {
     throw new ApiError(response.status, await readErrorMessage(response));
@@ -182,6 +277,20 @@ export function login(email: string, password: string): Promise<LoginResponse> {
     method: "POST",
     body: JSON.stringify({ email, password }),
   });
+}
+
+/**
+ * Renova accessToken e refreshToken. O refreshToken antigo deixa de valer.
+ */
+export function refresh(refreshToken: string): Promise<RefreshResponse> {
+  return request<RefreshResponse>(
+    "/api/v1/auth/refresh",
+    {
+      method: "POST",
+      body: JSON.stringify({ refreshToken }),
+    },
+    { skipAuthRetry: true },
+  );
 }
 
 export function register(
@@ -330,5 +439,74 @@ export function getPositions(accessToken: string): Promise<Position[]> {
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },
+  });
+}
+
+export type MatchResult = {
+  matchId: string;
+  homeTeamName: string;
+  awayTeamName: string;
+  homeScore: number | null;
+  awayScore: number | null;
+  matchTypeName: string | null;
+};
+
+export type MatchType = {
+  matchTypeId: string;
+  name: string;
+};
+
+export type CreateMatchPayload = {
+  homeTeamId: string;
+  awayTeamId: string;
+  matchTypeId: string;
+  homeScore: number;
+  awayScore: number;
+};
+
+/**
+ * Partidas de um TeamCycleSeason (mandante ou visitante). Sem
+ * teamCycleSeasonId, o back-end usa o time do usuario na temporada atual.
+ */
+export function getMatches(
+  accessToken: string,
+  teamCycleSeasonId?: string,
+): Promise<MatchResult[]> {
+  const query = teamCycleSeasonId
+    ? `?teamCycleSeasonId=${encodeURIComponent(teamCycleSeasonId)}`
+    : "";
+  return request<MatchResult[]>(`/api/v1/matches${query}`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+}
+
+/**
+ * Lista todos os MatchTypes (matchTypeId e name).
+ */
+export function getMatchTypes(accessToken: string): Promise<MatchType[]> {
+  return request<MatchType[]>("/api/v1/match-types", {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+}
+
+/**
+ * Cria uma nova partida.
+ */
+export function createMatch(
+  accessToken: string,
+  payload: CreateMatchPayload,
+): Promise<MatchResult> {
+  return request<MatchResult>("/api/v1/matches", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(payload),
   });
 }

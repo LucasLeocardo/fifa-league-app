@@ -30,5 +30,9 @@ class UnauthorizedError(AppError):
     """Credenciais invalidas ou sessao nao autorizada."""
 
 
+class ForbiddenError(AppError):
+    """Usuario autenticado sem permissao para a operacao."""
+
+
 class AuthProviderError(AppError):
     """Falha inesperada no provedor de autenticacao (Supabase Auth)."""

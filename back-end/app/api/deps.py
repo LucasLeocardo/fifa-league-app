@@ -7,11 +7,13 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.exceptions import UnauthorizedError
+from app.core.exceptions import ForbiddenError, UnauthorizedError
 from app.core.security import get_auth_user_id_from_token
 from app.models.user import User
 from app.repositories.cycle_season import CycleSeasonRepository
 from app.repositories.leaderboard import LeaderboardRepository
+from app.repositories.match import MatchRepository
+from app.repositories.match_type import MatchTypeRepository
 from app.repositories.position import PositionRepository
 from app.repositories.team_cycle_season import TeamCycleSeasonRepository
 from app.repositories.team_squad import TeamSquadRepository
@@ -20,6 +22,8 @@ from app.repositories.user import UserRepository
 from app.services.auth import AuthService
 from app.services.cycle_season import CycleSeasonService
 from app.services.leaderboard import LeaderboardService
+from app.services.match import MatchService
+from app.services.match_type import MatchTypeService
 from app.services.position import PositionService
 from app.services.team_cycle_season import TeamCycleSeasonService
 from app.services.team_squad import TeamSquadService
@@ -103,6 +107,28 @@ def get_leaderboard_service(
     return LeaderboardService(leaderboard_repository, cycle_season_repository)
 
 
+def get_match_type_repository(db: DbSession) -> MatchTypeRepository:
+    return MatchTypeRepository(db)
+
+
+def get_match_type_service(
+    repository: Annotated[
+        MatchTypeRepository, Depends(get_match_type_repository)
+    ],
+) -> MatchTypeService:
+    return MatchTypeService(repository)
+
+
+def get_match_repository(db: DbSession) -> MatchRepository:
+    return MatchRepository(db)
+
+
+def get_match_service(
+    repository: Annotated[MatchRepository, Depends(get_match_repository)],
+) -> MatchService:
+    return MatchService(repository)
+
+
 def get_auth_service(
     repository: Annotated[UserRepository, Depends(get_user_repository)],
 ) -> AuthService:
@@ -136,6 +162,15 @@ async def get_current_user(
     return user
 
 
+async def get_current_admin_user(
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> User:
+    """Exige usuario autenticado com isAdmin = true."""
+    if not current_user.is_admin:
+        raise ForbiddenError("Apenas administradores podem realizar esta operacao.")
+    return current_user
+
+
 AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
 CycleSeasonServiceDep = Annotated[
     CycleSeasonService, Depends(get_cycle_season_service)
@@ -153,5 +188,10 @@ LeaderboardServiceDep = Annotated[
     LeaderboardService, Depends(get_leaderboard_service)
 ]
 PositionServiceDep = Annotated[PositionService, Depends(get_position_service)]
+MatchServiceDep = Annotated[MatchService, Depends(get_match_service)]
+MatchTypeServiceDep = Annotated[
+    MatchTypeService, Depends(get_match_type_service)
+]
 CurrentUserDep = Annotated[User, Depends(get_current_user)]
+CurrentAdminUserDep = Annotated[User, Depends(get_current_admin_user)]
 BearerTokenDep = Annotated[HTTPAuthorizationCredentials, Depends(_bearer)]

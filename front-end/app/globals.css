@@ -251,3 +251,33 @@ body {
     @apply font-sans;
   }
 }
+
+@keyframes results-phase-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes results-match-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.results-phase {
+  animation: results-phase-in 500ms ease-out both;
+}
+
+.results-match {
+  animation: results-match-in 420ms ease-out both;
+}

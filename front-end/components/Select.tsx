@@ -19,6 +19,8 @@ type SelectProps = {
   disabled?: boolean;
   placeholder?: string;
   className?: string;
+  /** When false, options stay in-place (needed inside native <dialog>). */
+  portal?: boolean;
   "aria-label"?: string;
 };
 
@@ -63,6 +65,7 @@ export function Select({
   disabled = false,
   placeholder = "Selecione",
   className,
+  portal = true,
   "aria-label": ariaLabel,
 }: Readonly<SelectProps>) {
   const selected = options.find((option) => option.value === value) ?? null;
@@ -81,9 +84,15 @@ export function Select({
         </ListboxButton>
 
         <ListboxOptions
-          anchor="bottom start"
+          portal={portal}
+          anchor={portal ? "bottom start" : undefined}
           transition
-          className="z-50 mt-2 max-h-72 w-[var(--button-width)] overflow-auto rounded-lg border border-[var(--stroke)] bg-[rgba(6,22,42,0.98)] p-1 text-sm shadow-xl backdrop-blur transition duration-150 ease-out [--anchor-gap:0.25rem] focus:outline-none data-[closed]:-translate-y-1 data-[closed]:opacity-0"
+          className={[
+            "z-50 mt-2 max-h-72 overflow-auto rounded-lg border border-[var(--stroke)] bg-[rgba(6,22,42,0.98)] p-1 text-sm shadow-xl backdrop-blur transition duration-150 ease-out focus:outline-none data-[closed]:-translate-y-1 data-[closed]:opacity-0",
+            portal
+              ? "w-[var(--button-width)] [--anchor-gap:0.25rem]"
+              : "absolute left-0 right-0 w-full",
+          ].join(" ")}
         >
           {options.map((option) => (
             <ListboxOption
