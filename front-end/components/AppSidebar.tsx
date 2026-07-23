@@ -1,6 +1,6 @@
 "use client";
 
-import { LayoutDashboard, LogOut, Trophy } from "lucide-react";
+import { LayoutDashboard, LogOut, Trophy, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
@@ -30,6 +30,7 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   { title: "Classificação", href: "/standings", icon: Trophy },
+  { title: "Elenco", href: "/squad", icon: Users },
   { title: "Início", href: "/home", icon: LayoutDashboard },
 ];
 

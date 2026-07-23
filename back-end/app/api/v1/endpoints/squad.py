@@ -3,10 +3,14 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Path, Query
 
 from app.api.deps import CurrentUserDep, TeamSquadServiceDep
-from app.schemas.team_squad import SquadResponse
+from app.schemas.team_squad import (
+    ShirtNumberUpdate,
+    SquadResponse,
+    TeamSquadEntryRead,
+)
 
 router = APIRouter()
 
@@ -32,3 +36,20 @@ async def get_squad(
 ) -> SquadResponse:
     """Retorna nome, overall, numero da camisa, posicoes (array) e teamSquadId."""
     return await service.get_squad(current_user.id, team_cycle_season_id)
+
+
+@router.patch(
+    "/{team_squad_id}",
+    summary="Atualiza o numero da camisa (shirtNumber) de uma linha de TeamSquad",
+)
+async def update_shirt_number(
+    service: TeamSquadServiceDep,
+    _current_user: CurrentUserDep,
+    payload: ShirtNumberUpdate,
+    team_squad_id: Annotated[
+        uuid.UUID,
+        Path(description="Id da linha em TeamSquad."),
+    ],
+) -> TeamSquadEntryRead:
+    """Atualiza o shirtNumber do TeamSquad informado."""
+    return await service.update_shirt_number(team_squad_id, payload.shirt_number)

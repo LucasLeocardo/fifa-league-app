@@ -7,6 +7,7 @@ export type AuthSession = {
   name: string;
   isAdmin: boolean;
   coachName: string | null;
+  numberOfTitles: number;
 };
 
 type AuthStore = {
@@ -15,6 +16,7 @@ type AuthStore = {
   name: string | null;
   isAdmin: boolean;
   coachName: string | null;
+  numberOfTitles: number;
   setSession: (session: AuthSession) => void;
   clearSession: () => void;
 };
@@ -25,6 +27,7 @@ const emptySession = {
   name: null as string | null,
   isAdmin: false,
   coachName: null as string | null,
+  numberOfTitles: 0,
 };
 
 export const useAuthStore = create<AuthStore>()(
@@ -38,6 +41,7 @@ export const useAuthStore = create<AuthStore>()(
           name: session.name,
           isAdmin: session.isAdmin,
           coachName: session.coachName,
+          numberOfTitles: session.numberOfTitles,
         }),
       clearSession: () => set({ ...emptySession }),
     }),
@@ -49,6 +53,7 @@ export const useAuthStore = create<AuthStore>()(
         name: state.name,
         isAdmin: state.isAdmin,
         coachName: state.coachName,
+        numberOfTitles: state.numberOfTitles,
       }),
     },
   ),

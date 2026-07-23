@@ -11,11 +11,13 @@ from app.core.exceptions import UnauthorizedError
 from app.core.security import get_auth_user_id_from_token
 from app.models.user import User
 from app.repositories.cycle_season import CycleSeasonRepository
+from app.repositories.team_cycle_season import TeamCycleSeasonRepository
 from app.repositories.team_squad import TeamSquadRepository
 from app.repositories.team_standing import TeamStandingRepository
 from app.repositories.user import UserRepository
 from app.services.auth import AuthService
 from app.services.cycle_season import CycleSeasonService
+from app.services.team_cycle_season import TeamCycleSeasonService
 from app.services.team_squad import TeamSquadService
 from app.services.team_standing import TeamStandingService
 
@@ -42,6 +44,12 @@ def get_team_squad_repository(db: DbSession) -> TeamSquadRepository:
     return TeamSquadRepository(db)
 
 
+def get_team_cycle_season_repository(
+    db: DbSession,
+) -> TeamCycleSeasonRepository:
+    return TeamCycleSeasonRepository(db)
+
+
 def get_cycle_season_service(
     repository: Annotated[
         CycleSeasonRepository, Depends(get_cycle_season_repository)
@@ -56,6 +64,14 @@ def get_team_squad_service(
     ],
 ) -> TeamSquadService:
     return TeamSquadService(repository)
+
+
+def get_team_cycle_season_service(
+    repository: Annotated[
+        TeamCycleSeasonRepository, Depends(get_team_cycle_season_repository)
+    ],
+) -> TeamCycleSeasonService:
+    return TeamCycleSeasonService(repository)
 
 
 def get_auth_service(
@@ -100,6 +116,9 @@ TeamStandingServiceDep = Annotated[
 ]
 TeamSquadServiceDep = Annotated[
     TeamSquadService, Depends(get_team_squad_service)
+]
+TeamCycleSeasonServiceDep = Annotated[
+    TeamCycleSeasonService, Depends(get_team_cycle_season_service)
 ]
 CurrentUserDep = Annotated[User, Depends(get_current_user)]
 BearerTokenDep = Annotated[HTTPAuthorizationCredentials, Depends(_bearer)]

@@ -1,6 +1,7 @@
 """Engine e sessao assincrona do SQLAlchemy para o Postgres do Supabase."""
 
 import ssl
+import uuid
 from collections.abc import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import (
@@ -31,6 +32,12 @@ def _build_connect_args() -> dict:
         # No pooler transacional (PgBouncer) prepared statements quebram;
         # statement_cache_size=0 desativa o cache do asyncpg.
         "statement_cache_size": settings.db_statement_cache_size,
+        # Ainda assim o asyncpg cria prepared statements com nomes
+        # incrementais (__asyncpg_stmt_1__). Como o PgBouncer multiplexa
+        # conexoes de servidor, esses nomes colidem entre clientes
+        # (DuplicatePreparedStatementError). Gerar um nome unico por
+        # statement resolve a colisao.
+        "prepared_statement_name_func": lambda: f"__asyncpg_{uuid.uuid4()}__",
     }
     if settings.db_use_ssl:
         connect_args["ssl"] = _build_ssl_arg()

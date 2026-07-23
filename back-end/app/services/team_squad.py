@@ -6,7 +6,11 @@ import uuid
 
 from app.core.exceptions import NotFoundError
 from app.repositories.team_squad import TeamSquadRepository
-from app.schemas.team_squad import SquadPlayerRead, SquadResponse
+from app.schemas.team_squad import (
+    SquadPlayerRead,
+    SquadResponse,
+    TeamSquadEntryRead,
+)
 
 
 class TeamSquadService:
@@ -32,6 +36,8 @@ class TeamSquadService:
                 team_squad_id=row.team_squad_id,
                 player_name=row.player_name,
                 overall=row.overall,
+                player_cost=row.player_cost,
+                currency=row.currency,
                 shirt_number=row.shirt_number,
                 positions=list(row.positions or []),
                 total_goals=row.total_goals,
@@ -45,6 +51,20 @@ class TeamSquadService:
             for row in rows
         ]
         return SquadResponse(team_cycle_season_id=resolved_id, players=players)
+
+    async def update_shirt_number(
+        self, team_squad_id: uuid.UUID, shirt_number: int
+    ) -> TeamSquadEntryRead:
+        """Atualiza o numero da camisa de uma linha de TeamSquad."""
+        squad = await self.repository.update_shirt_number(
+            team_squad_id, shirt_number
+        )
+        if squad is None:
+            raise NotFoundError("TeamSquad nao encontrado.")
+        return TeamSquadEntryRead(
+            team_squad_id=squad.id,
+            shirt_number=squad.shirt_number,
+        )
 
     async def _resolve_team_cycle_season_id(
         self,

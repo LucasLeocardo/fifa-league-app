@@ -34,6 +34,7 @@ class LoginResponse(_CamelModel):
     is_admin: bool
     name: str
     coach_name: str | None = None
+    number_of_titles: int = 0
 
 
 class RefreshRequest(_CamelModel):

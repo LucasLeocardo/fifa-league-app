@@ -11,6 +11,7 @@ export function HomeClient() {
   const name = useAuthStore((s) => s.name);
   const coachName = useAuthStore((s) => s.coachName);
   const isAdmin = useAuthStore((s) => s.isAdmin);
+  const numberOfTitles = useAuthStore((s) => s.numberOfTitles);
 
   const [hydrated, setHydrated] = useState(false);
 
@@ -50,6 +51,10 @@ export function HomeClient() {
           {coachName ? `Tecnico: ${coachName}` : "Sem tecnico definido"}
           {" · "}
           {isAdmin ? "Admin" : "Jogador"}
+        </p>
+        <p className="mt-2 text-sm text-[var(--ink)]">
+          <span className="text-[var(--lime)] font-semibold">{numberOfTitles}</span>
+          {numberOfTitles > 1 ? " títulos" : " título"}
         </p>
       </div>
     </div>

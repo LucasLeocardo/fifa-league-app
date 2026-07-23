@@ -20,6 +20,8 @@ class SquadPlayerRead(_CamelModel):
     team_squad_id: uuid.UUID
     player_name: str = Field(..., max_length=255)
     overall: int | None = None
+    player_cost: int | None = None
+    currency: str | None = Field(default=None, max_length=255)
     shirt_number: int | None = None
     positions: list[str] = Field(default_factory=list)
     total_goals: int = 0
@@ -32,3 +34,16 @@ class SquadResponse(_CamelModel):
 
     team_cycle_season_id: uuid.UUID
     players: list[SquadPlayerRead]
+
+
+class ShirtNumberUpdate(_CamelModel):
+    """Corpo para atualizar o numero da camisa de uma linha de TeamSquad."""
+
+    shirt_number: int = Field(..., ge=0)
+
+
+class TeamSquadEntryRead(_CamelModel):
+    """Linha de TeamSquad apos atualizacao."""
+
+    team_squad_id: uuid.UUID
+    shirt_number: int | None = None

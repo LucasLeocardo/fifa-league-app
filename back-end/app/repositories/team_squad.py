@@ -16,13 +16,39 @@ from app.models.team_cycle_season import TeamCycleSeason
 from app.models.team_squad import TeamSquad
 
 SquadRow = Row[
-    tuple[uuid.UUID, str, int | None, int | None, list[str], int, int, float | None]
+    tuple[
+        uuid.UUID,
+        str,
+        int | None,
+        int | None,
+        str | None,
+        int | None,
+        list[str],
+        int,
+        int,
+        float | None,
+    ]
 ]
 
 
 class TeamSquadRepository:
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
+
+    async def update_shirt_number(
+        self, team_squad_id: uuid.UUID, shirt_number: int
+    ) -> TeamSquad | None:
+        """Atualiza o numero da camisa de uma linha de TeamSquad.
+
+        Retorna a linha atualizada ou None se o id nao existir.
+        """
+        squad = await self.db.get(TeamSquad, team_squad_id)
+        if squad is None:
+            return None
+        squad.shirt_number = shirt_number
+        await self.db.commit()
+        await self.db.refresh(squad)
+        return squad
 
     async def get_current_team_cycle_season_id(
         self, user_id: uuid.UUID
@@ -79,6 +105,8 @@ class TeamSquadRepository:
                 TeamSquad.id.label("team_squad_id"),
                 Player.name.label("player_name"),
                 Overall.value.label("overall"),
+                Overall.player_cost.label("player_cost"),
+                Overall.currency.label("currency"),
                 TeamSquad.shirt_number.label("shirt_number"),
                 positions,
                 func.coalesce(stats.c.total_goals, 0).label("total_goals"),
@@ -96,6 +124,8 @@ class TeamSquadRepository:
                 TeamSquad.id,
                 Player.name,
                 Overall.value,
+                Overall.player_cost,
+                Overall.currency,
                 TeamSquad.shirt_number,
                 stats.c.total_goals,
                 stats.c.total_assists,

@@ -41,6 +41,7 @@ export function LoginForm() {
         name: session.name,
         isAdmin: session.isAdmin,
         coachName: session.coachName,
+        numberOfTitles: session.numberOfTitles,
       });
       flashSuccess("Login realizado com sucesso.");
       router.push("/standings");

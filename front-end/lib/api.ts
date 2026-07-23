@@ -4,6 +4,7 @@ export type LoginResponse = {
   isAdmin: boolean;
   name: string;
   coachName: string | null;
+  numberOfTitles: number;
 };
 
 export type RegisterResponse = {
@@ -43,6 +44,35 @@ export type CycleSeason = {
   cycleName: string;
   seasonName: string;
   isCurrentSeason: boolean;
+};
+
+export type SquadPlayer = {
+  teamSquadId: string;
+  playerName: string;
+  overall: number | null;
+  playerCost: number | null;
+  currency: string | null;
+  shirtNumber: number | null;
+  positions: string[];
+  totalGoals: number;
+  totalAssists: number;
+  averageRating: number | null;
+};
+
+export type SquadResponse = {
+  teamCycleSeasonId: string;
+  players: SquadPlayer[];
+};
+
+export type TeamSquadEntry = {
+  teamSquadId: string;
+  shirtNumber: number | null;
+};
+
+export type TeamCycleSeason = {
+  teamCycleSeasonId: string;
+  teamName: string;
+  isMyTeam: boolean;
 };
 
 export class ApiError extends Error {
@@ -172,4 +202,63 @@ export function getCycleSeasons(accessToken: string): Promise<CycleSeason[]> {
       Authorization: `Bearer ${accessToken}`,
     },
   });
+}
+
+/**
+ * Elenco (TeamSquad). Sem teamCycleSeasonId, o back-end usa o TeamCycleSeason
+ * do usuario (do token) na temporada atual (CycleSeason com endDate nulo).
+ */
+export function getSquad(
+  accessToken: string,
+  teamCycleSeasonId?: string,
+): Promise<SquadResponse> {
+  const query = teamCycleSeasonId
+    ? `?teamCycleSeasonId=${encodeURIComponent(teamCycleSeasonId)}`
+    : "";
+  return request<SquadResponse>(`/api/v1/squad${query}`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+}
+
+/**
+ * TeamCycleSeasons de uma temporada. Sem cycleSeasonId, o back-end usa a
+ * temporada atual (CycleSeason com endDate nulo). isMyTeam indica o time do
+ * usuario logado.
+ */
+export function getTeamCycleSeasons(
+  accessToken: string,
+  cycleSeasonId?: string,
+): Promise<TeamCycleSeason[]> {
+  const query = cycleSeasonId
+    ? `?cycleSeasonId=${encodeURIComponent(cycleSeasonId)}`
+    : "";
+  return request<TeamCycleSeason[]>(`/api/v1/team-cycle-seasons${query}`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+}
+
+/**
+ * Atualiza o numero da camisa (shirtNumber) de uma linha de TeamSquad.
+ */
+export function updateShirtNumber(
+  accessToken: string,
+  teamSquadId: string,
+  shirtNumber: number,
+): Promise<TeamSquadEntry> {
+  return request<TeamSquadEntry>(
+    `/api/v1/squad/${encodeURIComponent(teamSquadId)}`,
+    {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({ shirtNumber }),
+    },
+  );
 }

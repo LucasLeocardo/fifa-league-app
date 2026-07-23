@@ -92,6 +92,7 @@ class AuthService:
             is_admin=user.is_admin,
             name=user.name,
             coach_name=user.coach_name,
+            number_of_titles=user.number_of_titles,
         )
 
     async def refresh(self, data: RefreshRequest) -> RefreshResponse:
