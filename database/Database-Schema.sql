@@ -156,14 +156,15 @@ CREATE TABLE "File" (
 );
 
 CREATE TABLE "MatchPlayerStat" (
-    "id"         uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
-    "matchId"    uuid        NOT NULL,
-    "playerId"   uuid        NOT NULL,
-    "sourceFile" uuid,
-    "goals"      integer,
-    "assists"    integer,
-    "rating"     double precision,
-    "createdAt"  timestamptz NOT NULL DEFAULT now()
+    "id"          uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+    "matchId"     uuid        NOT NULL,
+    "playerId"    uuid        NOT NULL,
+    "teamSquadId" uuid,
+    "sourceFile"  uuid,
+    "goals"       integer,
+    "assists"     integer,
+    "rating"      double precision,
+    "createdAt"   timestamptz NOT NULL DEFAULT now()
 );
 
 CREATE TABLE "Feature" (
@@ -204,6 +205,10 @@ ALTER TABLE "Match"
 ALTER TABLE "MatchPlayerStat"
     ADD CONSTRAINT "fk_MatchPlayerStat_sourceFile"
     FOREIGN KEY ("sourceFile") REFERENCES "File" ("id");
+
+ALTER TABLE "MatchPlayerStat"
+    ADD CONSTRAINT "fk_MatchPlayerStat_teamSquadId"
+    FOREIGN KEY ("teamSquadId") REFERENCES "TeamSquad" ("id");
 
 ALTER TABLE "File"
     ADD CONSTRAINT "fk_File_parentId"
@@ -313,6 +318,7 @@ CREATE INDEX "ix_Match_awayTeamId"                ON "Match" ("awayTeamId");
 CREATE INDEX "ix_Match_typeId"                    ON "Match" ("typeId");
 CREATE INDEX "ix_MatchPlayerStat_matchId"         ON "MatchPlayerStat" ("matchId");
 CREATE INDEX "ix_MatchPlayerStat_playerId"        ON "MatchPlayerStat" ("playerId");
+CREATE INDEX "ix_MatchPlayerStat_teamSquadId"     ON "MatchPlayerStat" ("teamSquadId");
 CREATE INDEX "ix_MatchPlayerStat_sourceFile"      ON "MatchPlayerStat" ("sourceFile");
 CREATE INDEX "ix_File_parentId"                   ON "File" ("parentId");
 CREATE INDEX "ix_File_sourceGameId"               ON "File" ("sourceGameId");

@@ -11,10 +11,12 @@ from app.core.exceptions import UnauthorizedError
 from app.core.security import get_auth_user_id_from_token
 from app.models.user import User
 from app.repositories.cycle_season import CycleSeasonRepository
+from app.repositories.team_squad import TeamSquadRepository
 from app.repositories.team_standing import TeamStandingRepository
 from app.repositories.user import UserRepository
 from app.services.auth import AuthService
 from app.services.cycle_season import CycleSeasonService
+from app.services.team_squad import TeamSquadService
 from app.services.team_standing import TeamStandingService
 
 # Sessao de banco por request (camada de conexao).
@@ -36,12 +38,24 @@ def get_team_standing_repository(db: DbSession) -> TeamStandingRepository:
     return TeamStandingRepository(db)
 
 
+def get_team_squad_repository(db: DbSession) -> TeamSquadRepository:
+    return TeamSquadRepository(db)
+
+
 def get_cycle_season_service(
     repository: Annotated[
         CycleSeasonRepository, Depends(get_cycle_season_repository)
     ],
 ) -> CycleSeasonService:
     return CycleSeasonService(repository)
+
+
+def get_team_squad_service(
+    repository: Annotated[
+        TeamSquadRepository, Depends(get_team_squad_repository)
+    ],
+) -> TeamSquadService:
+    return TeamSquadService(repository)
 
 
 def get_auth_service(
@@ -83,6 +97,9 @@ CycleSeasonServiceDep = Annotated[
 ]
 TeamStandingServiceDep = Annotated[
     TeamStandingService, Depends(get_team_standing_service)
+]
+TeamSquadServiceDep = Annotated[
+    TeamSquadService, Depends(get_team_squad_service)
 ]
 CurrentUserDep = Annotated[User, Depends(get_current_user)]
 BearerTokenDep = Annotated[HTTPAuthorizationCredentials, Depends(_bearer)]
