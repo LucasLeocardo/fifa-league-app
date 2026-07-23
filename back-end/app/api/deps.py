@@ -11,12 +11,16 @@ from app.core.exceptions import UnauthorizedError
 from app.core.security import get_auth_user_id_from_token
 from app.models.user import User
 from app.repositories.cycle_season import CycleSeasonRepository
+from app.repositories.leaderboard import LeaderboardRepository
+from app.repositories.position import PositionRepository
 from app.repositories.team_cycle_season import TeamCycleSeasonRepository
 from app.repositories.team_squad import TeamSquadRepository
 from app.repositories.team_standing import TeamStandingRepository
 from app.repositories.user import UserRepository
 from app.services.auth import AuthService
 from app.services.cycle_season import CycleSeasonService
+from app.services.leaderboard import LeaderboardService
+from app.services.position import PositionService
 from app.services.team_cycle_season import TeamCycleSeasonService
 from app.services.team_squad import TeamSquadService
 from app.services.team_standing import TeamStandingService
@@ -74,6 +78,31 @@ def get_team_cycle_season_service(
     return TeamCycleSeasonService(repository)
 
 
+def get_position_repository(db: DbSession) -> PositionRepository:
+    return PositionRepository(db)
+
+
+def get_position_service(
+    repository: Annotated[PositionRepository, Depends(get_position_repository)],
+) -> PositionService:
+    return PositionService(repository)
+
+
+def get_leaderboard_repository(db: DbSession) -> LeaderboardRepository:
+    return LeaderboardRepository(db)
+
+
+def get_leaderboard_service(
+    leaderboard_repository: Annotated[
+        LeaderboardRepository, Depends(get_leaderboard_repository)
+    ],
+    cycle_season_repository: Annotated[
+        CycleSeasonRepository, Depends(get_cycle_season_repository)
+    ],
+) -> LeaderboardService:
+    return LeaderboardService(leaderboard_repository, cycle_season_repository)
+
+
 def get_auth_service(
     repository: Annotated[UserRepository, Depends(get_user_repository)],
 ) -> AuthService:
@@ -120,5 +149,9 @@ TeamSquadServiceDep = Annotated[
 TeamCycleSeasonServiceDep = Annotated[
     TeamCycleSeasonService, Depends(get_team_cycle_season_service)
 ]
+LeaderboardServiceDep = Annotated[
+    LeaderboardService, Depends(get_leaderboard_service)
+]
+PositionServiceDep = Annotated[PositionService, Depends(get_position_service)]
 CurrentUserDep = Annotated[User, Depends(get_current_user)]
 BearerTokenDep = Annotated[HTTPAuthorizationCredentials, Depends(_bearer)]

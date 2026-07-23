@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     create_async_engine,
 )
+from sqlalchemy.pool import NullPool
 
 from app.core.config import settings
 
@@ -28,15 +29,13 @@ def _build_ssl_arg() -> bool | ssl.SSLContext:
 
 
 def _build_connect_args() -> dict:
+    # Supabase usa PgBouncer em modo transaction: prepared statements
+    # nomeados nao sobrevivem entre round-trips (a conexao de backend
+    # muda). Desligar os dois caches e usar nomes unicos evita
+    # DuplicatePreparedStatementError e InvalidSQLStatementNameError.
     connect_args: dict = {
-        # No pooler transacional (PgBouncer) prepared statements quebram;
-        # statement_cache_size=0 desativa o cache do asyncpg.
-        "statement_cache_size": settings.db_statement_cache_size,
-        # Ainda assim o asyncpg cria prepared statements com nomes
-        # incrementais (__asyncpg_stmt_1__). Como o PgBouncer multiplexa
-        # conexoes de servidor, esses nomes colidem entre clientes
-        # (DuplicatePreparedStatementError). Gerar um nome unico por
-        # statement resolve a colisao.
+        "statement_cache_size": 0,
+        "prepared_statement_cache_size": 0,
         "prepared_statement_name_func": lambda: f"__asyncpg_{uuid.uuid4()}__",
     }
     if settings.db_use_ssl:
@@ -47,7 +46,7 @@ def _build_connect_args() -> dict:
 engine = create_async_engine(
     settings.async_database_url,
     echo=settings.db_echo,
-    pool_pre_ping=True,
+    poolclass=NullPool,
     connect_args=_build_connect_args(),
 )
 

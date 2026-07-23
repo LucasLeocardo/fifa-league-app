@@ -54,6 +54,7 @@ export type SquadPlayer = {
   currency: string | null;
   shirtNumber: number | null;
   positions: string[];
+  gamesPlayed: number;
   totalGoals: number;
   totalAssists: number;
   averageRating: number | null;
@@ -73,6 +74,37 @@ export type TeamCycleSeason = {
   teamCycleSeasonId: string;
   teamName: string;
   isMyTeam: boolean;
+};
+
+export type LeaderboardGoalsEntry = {
+  playerName: string;
+  teamName: string;
+  totalGoals: number;
+};
+
+export type LeaderboardAssistsEntry = {
+  playerName: string;
+  teamName: string;
+  totalAssists: number;
+};
+
+export type LeaderboardRatingsEntry = {
+  playerName: string;
+  teamName: string;
+  averageRating: number;
+  gamesPlayed: number;
+};
+
+export type LeaderboardResponse = {
+  cycleSeasonId: string;
+  goals: LeaderboardGoalsEntry[];
+  assists: LeaderboardAssistsEntry[];
+  ratings: LeaderboardRatingsEntry[];
+};
+
+export type Position = {
+  id: string;
+  code: string;
 };
 
 export class ApiError extends Error {
@@ -261,4 +293,42 @@ export function updateShirtNumber(
       body: JSON.stringify({ shirtNumber }),
     },
   );
+}
+
+/**
+ * Leaderboard de gols, assistencias e notas medias. Sem cycleSeasonId, o
+ * back-end usa a temporada atual (CycleSeason com endDate nulo). positionIds
+ * filtra por posicoes; vazio/omitido nao filtra.
+ */
+export function getLeaderboard(
+  accessToken: string,
+  cycleSeasonId?: string,
+  positionIds?: string[],
+): Promise<LeaderboardResponse> {
+  const params = new URLSearchParams();
+  if (cycleSeasonId) {
+    params.set("cycleSeasonId", cycleSeasonId);
+  }
+  for (const positionId of positionIds ?? []) {
+    params.append("positionIds", positionId);
+  }
+  const query = params.toString() ? `?${params.toString()}` : "";
+  return request<LeaderboardResponse>(`/api/v1/leaderboard${query}`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+}
+
+/**
+ * Lista todas as posicoes (id e code).
+ */
+export function getPositions(accessToken: string): Promise<Position[]> {
+  return request<Position[]>("/api/v1/positions", {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
 }

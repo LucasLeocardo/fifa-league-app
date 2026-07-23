@@ -221,6 +221,15 @@ export function SquadClient() {
     [players],
   );
 
+  const totalSquadValue = useMemo(
+    () =>
+      players.reduce(
+        (sum, player) => sum + (player.playerCost ?? 0),
+        0,
+      ),
+    [players],
+  );
+
   // A coluna de numero de camisa so e editavel quando o time selecionado
   // e o do usuario (isMyTeam).
   const editable = useMemo(
@@ -332,6 +341,33 @@ export function SquadClient() {
           row.positions.length > 0 ? row.positions.join("/") : "-",
       },
       {
+        key: "gamesPlayed",
+        header: "J",
+        align: "center",
+        render: (row) => row.gamesPlayed,
+      },
+      {
+        key: "totalGoals",
+        header: "G",
+        align: "center",
+        render: (row) => row.totalGoals,
+      },
+      {
+        key: "totalAssists",
+        header: "A",
+        align: "center",
+        render: (row) => row.totalAssists,
+      },
+      {
+        key: "averageRating",
+        header: "Nota",
+        align: "center",
+        render: (row) =>
+          row.averageRating === null
+            ? "-"
+            : row.averageRating.toFixed(2).replace(".", ","),
+      },
+      {
         key: "playerCost",
         header: "Valor",
         align: "right",
@@ -351,7 +387,7 @@ export function SquadClient() {
 
   return (
     <div className="px-6 py-10 md:px-10">
-      <div className="mx-auto w-full max-w-4xl">
+      <div className="mx-auto w-full max-w-6xl">
         <header>
           <h1 className="font-[family-name:var(--font-display)] text-4xl tracking-wide text-[var(--ink)] md:text-5xl">
             Meu elenco
@@ -402,7 +438,16 @@ export function SquadClient() {
           ) : null}
         </div>
 
-        <div className="mt-4">
+        <div className="mt-4 flex items-end justify-end">
+          <p className="text-sm text-[var(--muted)]">
+            Valor total do elenco{" "}
+            <span className="font-semibold text-[var(--lime)]">
+              {formatEuro(totalSquadValue)}
+            </span>
+          </p>
+        </div>
+
+        <div className="mt-2">
           <DataTable
             columns={columns}
             data={sortedPlayers}
@@ -412,6 +457,10 @@ export function SquadClient() {
             emptyMessage="Nenhum jogador no elenco ainda."
           />
         </div>
+
+        <p className="mt-4 text-xs text-[var(--muted)]">
+          J: jogos · G: gols · A: assistencias · Nota: media das notas
+        </p>
       </div>
     </div>
   );

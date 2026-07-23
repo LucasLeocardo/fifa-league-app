@@ -40,6 +40,7 @@ class TeamSquadService:
                 currency=row.currency,
                 shirt_number=row.shirt_number,
                 positions=list(row.positions or []),
+                games_played=row.games_played,
                 total_goals=row.total_goals,
                 total_assists=row.total_assists,
                 average_rating=(

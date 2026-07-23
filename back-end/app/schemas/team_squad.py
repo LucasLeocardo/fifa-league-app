@@ -24,6 +24,7 @@ class SquadPlayerRead(_CamelModel):
     currency: str | None = Field(default=None, max_length=255)
     shirt_number: int | None = None
     positions: list[str] = Field(default_factory=list)
+    games_played: int = 0
     total_goals: int = 0
     total_assists: int = 0
     average_rating: float | None = None

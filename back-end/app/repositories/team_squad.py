@@ -26,6 +26,7 @@ SquadRow = Row[
         list[str],
         int,
         int,
+        int,
         float | None,
     ]
 ]
@@ -76,8 +77,8 @@ class TeamSquadRepository:
     ) -> Sequence[SquadRow]:
         """Lista os jogadores do elenco com nome, overall, numero da camisa,
         posicoes (array), o id da linha em TeamSquad e as estatisticas agregadas
-        de MatchPlayerStat: total de gols, total de assistencias e media das
-        notas (por teamSquadId)."""
+        de MatchPlayerStat: jogos jogados, total de gols, total de assistencias
+        e media das notas (por teamSquadId)."""
         positions = func.array_remove(
             func.array_agg(distinct(Position.code)), None
         ).label("positions")
@@ -87,6 +88,9 @@ class TeamSquadRepository:
         stats = (
             select(
                 MatchPlayerStat.team_squad_id.label("team_squad_id"),
+                func.count(distinct(MatchPlayerStat.match_id)).label(
+                    "games_played"
+                ),
                 func.coalesce(func.sum(MatchPlayerStat.goals), 0).label(
                     "total_goals"
                 ),
@@ -109,6 +113,7 @@ class TeamSquadRepository:
                 Overall.currency.label("currency"),
                 TeamSquad.shirt_number.label("shirt_number"),
                 positions,
+                func.coalesce(stats.c.games_played, 0).label("games_played"),
                 func.coalesce(stats.c.total_goals, 0).label("total_goals"),
                 func.coalesce(stats.c.total_assists, 0).label("total_assists"),
                 stats.c.average_rating.label("average_rating"),
@@ -127,6 +132,7 @@ class TeamSquadRepository:
                 Overall.player_cost,
                 Overall.currency,
                 TeamSquad.shirt_number,
+                stats.c.games_played,
                 stats.c.total_goals,
                 stats.c.total_assists,
                 stats.c.average_rating,

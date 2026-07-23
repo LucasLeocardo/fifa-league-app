@@ -6,6 +6,8 @@ from app.api.v1.endpoints import (
     auth,
     cycle_seasons,
     health,
+    leaderboard,
+    positions,
     squad,
     standings,
     team_cycle_seasons,
@@ -24,3 +26,7 @@ api_router.include_router(
     prefix="/team-cycle-seasons",
     tags=["team-cycle-seasons"],
 )
+api_router.include_router(
+    leaderboard.router, prefix="/leaderboard", tags=["leaderboard"]
+)
+api_router.include_router(positions.router, prefix="/positions", tags=["positions"])
