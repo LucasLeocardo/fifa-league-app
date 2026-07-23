@@ -283,12 +283,15 @@ export function StatsClient() {
     label: position.code,
   }));
 
-  const activeRows =
-    activeTab === "goals"
-      ? leaderboard.goals
-      : activeTab === "assists"
-        ? leaderboard.assists
-        : leaderboard.ratings;
+  let activeRows:
+    | LeaderboardGoalsEntry[]
+    | LeaderboardAssistsEntry[]
+    | LeaderboardRatingsEntry[] = leaderboard.ratings;
+  if (activeTab === "goals") {
+    activeRows = leaderboard.goals;
+  } else if (activeTab === "assists") {
+    activeRows = leaderboard.assists;
+  }
 
   const totalPages = Math.max(1, Math.ceil(activeRows.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages - 1);

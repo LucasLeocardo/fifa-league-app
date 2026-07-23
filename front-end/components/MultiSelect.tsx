@@ -66,12 +66,12 @@ export function MultiSelect({
     .filter((option) => value.includes(option.value))
     .map((option) => option.label);
 
-  const buttonLabel =
-    selectedLabels.length === 0
-      ? placeholder
-      : selectedLabels.length <= 3
-        ? selectedLabels.join(", ")
-        : `${selectedLabels.length} selecionadas`;
+  let buttonLabel = placeholder;
+  if (selectedLabels.length > 0 && selectedLabels.length <= 3) {
+    buttonLabel = selectedLabels.join(", ");
+  } else if (selectedLabels.length > 3) {
+    buttonLabel = `${selectedLabels.length} selecionadas`;
+  }
 
   return (
     <Listbox value={value} onChange={onChange} multiple disabled={disabled}>
