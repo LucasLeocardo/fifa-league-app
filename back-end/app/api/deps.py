@@ -11,6 +11,7 @@ from app.core.exceptions import ForbiddenError, UnauthorizedError
 from app.core.security import get_auth_user_id_from_token
 from app.models.user import User
 from app.repositories.cycle_season import CycleSeasonRepository
+from app.repositories.file import FileRepository
 from app.repositories.leaderboard import LeaderboardRepository
 from app.repositories.match import MatchRepository
 from app.repositories.match_type import MatchTypeRepository
@@ -22,6 +23,7 @@ from app.repositories.team_standing import TeamStandingRepository
 from app.repositories.user import UserRepository
 from app.services.auth import AuthService
 from app.services.cycle_season import CycleSeasonService
+from app.services.file import FileService
 from app.services.leaderboard import LeaderboardService
 from app.services.match import MatchService
 from app.services.match_type import MatchTypeService
@@ -141,6 +143,17 @@ def get_player_service(
     return PlayerService(repository)
 
 
+def get_file_repository(db: DbSession) -> FileRepository:
+    return FileRepository(db)
+
+
+def get_file_service(
+    db: DbSession,
+    repository: Annotated[FileRepository, Depends(get_file_repository)],
+) -> FileService:
+    return FileService(db, repository)
+
+
 def get_auth_service(
     repository: Annotated[UserRepository, Depends(get_user_repository)],
 ) -> AuthService:
@@ -205,6 +218,7 @@ MatchTypeServiceDep = Annotated[
     MatchTypeService, Depends(get_match_type_service)
 ]
 PlayerServiceDep = Annotated[PlayerService, Depends(get_player_service)]
+FileServiceDep = Annotated[FileService, Depends(get_file_service)]
 CurrentUserDep = Annotated[User, Depends(get_current_user)]
 CurrentAdminUserDep = Annotated[User, Depends(get_current_admin_user)]
 BearerTokenDep = Annotated[HTTPAuthorizationCredentials, Depends(_bearer)]

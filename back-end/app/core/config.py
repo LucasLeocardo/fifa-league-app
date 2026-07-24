@@ -42,6 +42,10 @@ class Settings(BaseSettings):
         ...,
         description="Service role key JWT do Supabase (eyJ...; nunca expor no front)",
     )
+    supabase_storage_bucket: str = Field(
+        default="files",
+        description="Nome do bucket no Supabase Storage para upload de fotos",
+    )
 
     # --- CORS ---
     backend_cors_origins: list[str] = ["http://localhost:3000"]

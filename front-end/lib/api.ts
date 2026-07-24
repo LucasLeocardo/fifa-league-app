@@ -444,11 +444,14 @@ export function getPositions(accessToken: string): Promise<Position[]> {
 
 export type MatchResult = {
   matchId: string;
+  homeTeamId: string | null;
+  awayTeamId: string | null;
   homeTeamName: string;
   awayTeamName: string;
   homeScore: number | null;
   awayScore: number | null;
   matchTypeName: string | null;
+  fileWasUploaded: boolean;
 };
 
 export type MatchType = {
@@ -617,4 +620,62 @@ export function deletePlayer(
       Authorization: `Bearer ${accessToken}`,
     },
   });
+}
+
+export type UploadedFile = {
+  fileId: string;
+  name: string;
+  extension: string | null;
+  mimeType: string | null;
+  url: string;
+  sourceGameId: string | null;
+  teamCycleSeasonId: string | null;
+  isProcessed: boolean;
+};
+
+/**
+ * Upload de fotos de uma partida (multipart).
+ * Nao usa Content-Type JSON para o browser definir o boundary.
+ */
+export async function uploadMatchPhotos(
+  accessToken: string,
+  payload: {
+    photos: File[];
+    sourceGameId: string;
+    teamCycleSeasonId: string;
+  },
+  options?: RequestOptions,
+): Promise<UploadedFile[]> {
+  const formData = new FormData();
+  for (const photo of payload.photos) {
+    formData.append("photos", photo);
+  }
+  formData.append("sourceGameId", payload.sourceGameId);
+  formData.append("teamCycleSeasonId", payload.teamCycleSeasonId);
+
+  const path = "/api/v1/files/upload-photos";
+  const response = await fetch(`${getApiBaseUrl()}${path}`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: formData,
+  });
+
+  if (
+    response.status === 401 &&
+    !options?.skipAuthRetry &&
+    hasAuthorizationHeader({ Authorization: `Bearer ${accessToken}` })
+  ) {
+    const tokens = await refreshSessionTokens();
+    return uploadMatchPhotos(tokens.accessToken, payload, {
+      skipAuthRetry: true,
+    });
+  }
+
+  if (!response.ok) {
+    throw new ApiError(response.status, await readErrorMessage(response));
+  }
+
+  return (await response.json()) as UploadedFile[];
 }

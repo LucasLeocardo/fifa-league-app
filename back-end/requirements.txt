@@ -1,6 +1,7 @@
 # FastAPI e servidor ASGI
 fastapi==0.115.6
 uvicorn[standard]==0.34.0
+python-multipart==0.0.20
 
 # Banco de dados (PostgreSQL / Supabase) - acesso assincrono
 sqlalchemy==2.0.36

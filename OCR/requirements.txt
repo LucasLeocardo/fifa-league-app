@@ -1,2 +1,6 @@
 opencv-python==4.12.0.88
 easyocr
+python-dotenv
+psycopg[binary]>=3.2
+supabase>=2.11.0
+requests

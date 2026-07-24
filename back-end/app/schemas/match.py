@@ -18,11 +18,14 @@ class MatchRead(_CamelModel):
     """Partida com placar, nomes dos times e tipo."""
 
     match_id: uuid.UUID
+    home_team_id: uuid.UUID | None = None
+    away_team_id: uuid.UUID | None = None
     home_team_name: str = Field(..., max_length=255)
     away_team_name: str = Field(..., max_length=255)
     home_score: int | None = None
     away_score: int | None = None
     match_type_name: str | None = Field(default=None, max_length=255)
+    file_was_uploaded: bool = False
 
 
 class MatchCreate(_CamelModel):

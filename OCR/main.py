@@ -16,6 +16,7 @@ Como funciona:
 import os
 import re
 import csv
+import io
 import cv2
 import easyocr
 
@@ -294,7 +295,17 @@ def extract(items, img=None):
     return players
 
 
-def process_image(image_path):
+def players_to_csv_bytes(players: list[dict]) -> bytes:
+    """Serializa as linhas de jogadores em CSV (UTF-8 com BOM)."""
+    buffer = io.StringIO()
+    writer = csv.DictWriter(buffer, fieldnames=["POS", "Name", "NF", "G", "AST"])
+    writer.writeheader()
+    writer.writerows(players)
+    return buffer.getvalue().encode("utf-8-sig")
+
+
+def process_image_to_csv_bytes(image_path: str) -> bytes:
+    """Roda o OCR na imagem e devolve o CSV correspondente em bytes."""
     print(f"[info] lendo: {image_path}")
     items = read_image(image_path)
     img = cv2.imread(image_path)
@@ -305,11 +316,16 @@ def process_image(image_path):
     for p in players:
         print(f"{p['POS']:<5} {p['Name']:<16} {str(p['NF']):>5} {p['G']:>3} {p['AST']:>4}")
 
-    with open(CSV_PATH, "w", newline="", encoding="utf-8-sig") as f:
-        writer = csv.DictWriter(f, fieldnames=["POS", "Name", "NF", "G", "AST"])
-        writer.writeheader()
-        writer.writerows(players)
-    print(f"\n[info] {len(players)} jogadores salvos em: {CSV_PATH}")
+    csv_bytes = players_to_csv_bytes(players)
+    print(f"\n[info] {len(players)} jogadores reconhecidos no OCR")
+    return csv_bytes
+
+
+def process_image(image_path):
+    csv_bytes = process_image_to_csv_bytes(image_path)
+    with open(CSV_PATH, "wb") as f:
+        f.write(csv_bytes)
+    print(f"[info] CSV salvo em: {CSV_PATH}")
 
 
 if __name__ == "__main__":

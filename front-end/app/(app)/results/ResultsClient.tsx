@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Loading } from "@/components/Loading";
 import { NewMatchModal } from "@/components/NewMatchModal";
 import { Select, type SelectOption } from "@/components/Select";
+import { UploadMatchPhotosModal } from "@/components/UploadMatchPhotosModal";
 import {
   ApiError,
   getCycleSeasons,
@@ -77,10 +78,14 @@ function MatchScoreboard({
   match,
   focusTeamName,
   index,
+  canUploadPhotos,
+  onUploadClick,
 }: Readonly<{
   match: MatchResult;
   focusTeamName: string;
   index: number;
+  canUploadPhotos: boolean;
+  onUploadClick: (match: MatchResult) => void;
 }>) {
   const homeScore = match.homeScore;
   const awayScore = match.awayScore;
@@ -88,6 +93,7 @@ function MatchScoreboard({
   const homeWins = decided && homeScore > awayScore;
   const awayWins = decided && awayScore > homeScore;
   const draw = decided && homeScore === awayScore;
+  const showUpload = canUploadPhotos && !match.fileWasUploaded;
 
   const homeIsFocus =
     focusTeamName.length > 0 &&
@@ -98,7 +104,12 @@ function MatchScoreboard({
 
   return (
     <article
-      className="results-match grid grid-cols-[1fr_auto_1fr] items-center gap-3 border-b border-[var(--stroke)]/40 px-2 py-4 last:border-b-0 md:gap-6 md:px-4"
+      className={[
+        "results-match relative grid grid-cols-[1fr_auto_1fr] items-center gap-3 border-b border-[var(--stroke)]/40 px-2 py-4 last:border-b-0 md:gap-6 md:px-4",
+        canUploadPhotos ? "pr-[7.75rem] md:pr-[8.5rem]" : "",
+      ]
+        .join(" ")
+        .trim()}
       style={{ animationDelay: `${index * 45}ms` }}
     >
       <p
@@ -150,6 +161,18 @@ function MatchScoreboard({
       >
         {match.awayTeamName || "Visitante"}
       </p>
+
+      {showUpload ? (
+        <button
+          type="button"
+          onClick={() => onUploadClick(match)}
+          aria-label="Enviar fotos da partida"
+          title="Enviar fotos"
+          className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer whitespace-nowrap rounded-md border border-[var(--stroke)] px-2.5 py-1.5 text-xs font-medium text-[var(--ink)] transition-colors hover:border-[var(--lime)] hover:text-[var(--lime)] md:right-4"
+        >
+          Upload de Fotos
+        </button>
+      ) : null}
     </article>
   );
 }
@@ -169,6 +192,7 @@ export function ResultsClient() {
   const [matches, setMatches] = useState<MatchResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
+  const [uploadMatch, setUploadMatch] = useState<MatchResult | null>(null);
 
   useEffect(() => {
     const markHydrated = () => setHydrated(true);
@@ -435,6 +459,8 @@ export function ResultsClient() {
                         match={match}
                         focusTeamName={focusTeamName}
                         index={index}
+                        canUploadPhotos={canCreateMatch}
+                        onUploadClick={setUploadMatch}
                       />
                     ))}
                   </div>
@@ -452,6 +478,18 @@ export function ResultsClient() {
           teamOptions={teamOptions}
           onClose={() => setModalOpen(false)}
           onCreated={() => {
+            void loadMatches(accessToken, selectedTeamCycleSeasonId || undefined);
+          }}
+        />
+      ) : null}
+
+      {accessToken && isAdmin ? (
+        <UploadMatchPhotosModal
+          open={uploadMatch !== null}
+          accessToken={accessToken}
+          match={uploadMatch}
+          onClose={() => setUploadMatch(null)}
+          onUploaded={() => {
             void loadMatches(accessToken, selectedTeamCycleSeasonId || undefined);
           }}
         />

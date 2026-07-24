@@ -5,6 +5,7 @@ from fastapi import APIRouter
 from app.api.v1.endpoints import (
     auth,
     cycle_seasons,
+    files,
     health,
     leaderboard,
     match_types,
@@ -38,3 +39,4 @@ api_router.include_router(matches.router, prefix="/matches", tags=["matches"])
 api_router.include_router(
     match_types.router, prefix="/match-types", tags=["match-types"]
 )
+api_router.include_router(files.router, prefix="/files", tags=["files"])

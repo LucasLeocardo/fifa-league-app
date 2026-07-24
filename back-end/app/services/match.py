@@ -62,9 +62,12 @@ class MatchService:
     def _to_read(row) -> MatchRead:
         return MatchRead(
             match_id=row.match_id,
+            home_team_id=row.home_team_id,
+            away_team_id=row.away_team_id,
             home_team_name=row.home_team_name,
             away_team_name=row.away_team_name,
             home_score=row.home_score,
             away_score=row.away_score,
             match_type_name=row.match_type_name,
+            file_was_uploaded=bool(row.file_was_uploaded),
         )

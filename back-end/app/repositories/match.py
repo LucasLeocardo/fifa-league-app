@@ -3,18 +3,29 @@
 import uuid
 from collections.abc import Sequence
 
-from sqlalchemy import Row, func, or_, select
+from sqlalchemy import Row, exists, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 
 from app.models.cycle_season import CycleSeason
+from app.models.file import File
 from app.models.match import Match
 from app.models.match_type import MatchType
 from app.models.team import Team
 from app.models.team_cycle_season import TeamCycleSeason
 
 MatchRow = Row[
-    tuple[uuid.UUID, str, str, int | None, int | None, str | None]
+    tuple[
+        uuid.UUID,
+        uuid.UUID | None,
+        uuid.UUID | None,
+        str,
+        str,
+        int | None,
+        int | None,
+        str | None,
+        bool,
+    ]
 ]
 
 
@@ -54,14 +65,21 @@ class MatchRepository:
         home_team = aliased(Team)
         away_team = aliased(Team)
 
+        file_was_uploaded = exists(
+            select(File.id).where(File.source_game_id == Match.id)
+        ).label("file_was_uploaded")
+
         result = await self.db.execute(
             select(
                 Match.id.label("match_id"),
+                Match.home_team_id.label("home_team_id"),
+                Match.away_team_id.label("away_team_id"),
                 func.coalesce(home_team.name, "").label("home_team_name"),
                 func.coalesce(away_team.name, "").label("away_team_name"),
                 Match.home_score.label("home_score"),
                 Match.away_score.label("away_score"),
                 MatchType.name.label("match_type_name"),
+                file_was_uploaded,
             )
             .select_from(Match)
             .outerjoin(home_tcs, home_tcs.id == Match.home_team_id)
@@ -86,14 +104,21 @@ class MatchRepository:
         home_team = aliased(Team)
         away_team = aliased(Team)
 
+        file_was_uploaded = exists(
+            select(File.id).where(File.source_game_id == Match.id)
+        ).label("file_was_uploaded")
+
         result = await self.db.execute(
             select(
                 Match.id.label("match_id"),
+                Match.home_team_id.label("home_team_id"),
+                Match.away_team_id.label("away_team_id"),
                 func.coalesce(home_team.name, "").label("home_team_name"),
                 func.coalesce(away_team.name, "").label("away_team_name"),
                 Match.home_score.label("home_score"),
                 Match.away_score.label("away_score"),
                 MatchType.name.label("match_type_name"),
+                file_was_uploaded,
             )
             .select_from(Match)
             .outerjoin(home_tcs, home_tcs.id == Match.home_team_id)
