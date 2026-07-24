@@ -1,10 +1,13 @@
 """Configuracao da aplicacao, carregada de variaveis de ambiente (.env)."""
 
+from __future__ import annotations
+
+import json
 from functools import lru_cache
-from typing import Any
+from typing import Annotated, Any
 
 from pydantic import Field, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -49,18 +52,28 @@ class Settings(BaseSettings):
     )
 
     # --- CORS ---
+    # NoDecode: evita json.loads automatico do EnvSettingsSource (quebra CSV no Railway).
     # Aceita JSON (["https://a.com"]) ou CSV (https://a.com,http://localhost:3000).
-    backend_cors_origins: list[str] = ["http://localhost:3000"]
+    backend_cors_origins: Annotated[list[str], NoDecode] = [
+        "http://localhost:3000"
+    ]
 
     @field_validator("backend_cors_origins", mode="before")
     @classmethod
     def _parse_cors_origins(cls, value: Any) -> Any:
+        if isinstance(value, list):
+            return value
         if isinstance(value, str):
             text = value.strip()
             if not text:
                 return []
             if text.startswith("["):
-                return value
+                parsed = json.loads(text)
+                if not isinstance(parsed, list):
+                    raise ValueError(
+                        "BACKEND_CORS_ORIGINS JSON precisa ser uma lista."
+                    )
+                return [str(item).strip() for item in parsed if str(item).strip()]
             return [part.strip() for part in text.split(",") if part.strip()]
         return value
 
