@@ -58,7 +58,8 @@ class MatchRepository:
     ) -> Sequence[MatchRow]:
         """Lista partidas em que o TeamCycleSeason e mandante ou visitante.
 
-        Inclui placar, nome dos dois times e nome do MatchType.
+        Inclui placar, nome dos dois times, nome do MatchType e se ja existe
+        File da partida para este TeamCycleSeason (sourceGameId + teamCycleSeasonId).
         """
         home_tcs = aliased(TeamCycleSeason)
         away_tcs = aliased(TeamCycleSeason)
@@ -66,7 +67,10 @@ class MatchRepository:
         away_team = aliased(Team)
 
         file_was_uploaded = exists(
-            select(File.id).where(File.source_game_id == Match.id)
+            select(File.id).where(
+                File.source_game_id == Match.id,
+                File.team_cycle_season_id == team_cycle_season_id,
+            )
         ).label("file_was_uploaded")
 
         result = await self.db.execute(

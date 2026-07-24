@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from urllib.parse import unquote, urlparse
+from urllib.parse import quote, unquote, urlparse
 
 import httpx
 
@@ -12,25 +12,45 @@ from app.core.exceptions import AuthProviderError
 from app.core.supabase import get_supabase_admin
 
 
+def _storage_auth_headers() -> dict[str, str]:
+    """Headers com service_role para o Storage (bypassa RLS)."""
+    key = settings.supabase_service_role_key
+    return {
+        "Authorization": f"Bearer {key}",
+        "apikey": key,
+    }
+
+
 def upload_bytes(
     *,
     content: bytes,
     object_path: str,
     content_type: str,
 ) -> str:
-    """Faz upload no bucket configurado e retorna a URL publica do arquivo."""
-    client = get_supabase_admin()
+    """Faz upload no bucket via REST Storage com service_role e retorna URL publica."""
     bucket = settings.supabase_storage_bucket
+    encoded_path = quote(object_path, safe="/")
+    url = (
+        f"{settings.supabase_url.rstrip('/')}"
+        f"/storage/v1/object/{bucket}/{encoded_path}"
+    )
+    headers = {
+        **_storage_auth_headers(),
+        "Content-Type": content_type or "application/octet-stream",
+        "x-upsert": "true",
+    }
     try:
-        client.storage.from_(bucket).upload(
-            path=object_path,
-            file=content,
-            file_options={
-                "content-type": content_type,
-                "upsert": "true",
-            },
+        response = httpx.post(url, content=content, headers=headers, timeout=120.0)
+        if response.status_code >= 400:
+            raise AuthProviderError(
+                f"Falha ao enviar arquivo ao Supabase Storage: {response.text}"
+            )
+        return (
+            f"{settings.supabase_url.rstrip('/')}"
+            f"/storage/v1/object/public/{bucket}/{encoded_path}"
         )
-        return client.storage.from_(bucket).get_public_url(object_path)
+    except AuthProviderError:
+        raise
     except Exception as exc:
         raise AuthProviderError(
             f"Falha ao enviar arquivo ao Supabase Storage: {exc}"
@@ -59,18 +79,34 @@ def object_path_from_public_url(url: str, bucket: str | None = None) -> str | No
 
 def download_bytes(*, file_url: str) -> bytes:
     """Baixa o conteudo do arquivo pela URL (Storage path ou URL publica)."""
-    client = get_supabase_admin()
     bucket = settings.supabase_storage_bucket
     object_path = object_path_from_public_url(file_url, bucket)
 
-    try:
-        if object_path:
+    if object_path:
+        encoded_path = quote(object_path, safe="/")
+        url = (
+            f"{settings.supabase_url.rstrip('/')}"
+            f"/storage/v1/object/{bucket}/{encoded_path}"
+        )
+        try:
+            response = httpx.get(
+                url,
+                headers=_storage_auth_headers(),
+                timeout=60.0,
+                follow_redirects=True,
+            )
+            if response.is_success and response.content:
+                return response.content
+        except Exception:
+            pass
+
+        try:
+            client = get_supabase_admin()
             content = client.storage.from_(bucket).download(object_path)
             if content:
                 return content
-    except Exception:
-        # Cai para download HTTP pela URL publica.
-        pass
+        except Exception:
+            pass
 
     try:
         response = httpx.get(file_url, timeout=60.0, follow_redirects=True)

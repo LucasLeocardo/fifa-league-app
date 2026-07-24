@@ -23,6 +23,19 @@ type EditableRatingRow = MatchPlayerRatingRow & {
   rowKey: string;
 };
 
+type MatchContext = {
+  fileId: string;
+  sourceGameId: string | null;
+  teamCycleSeasonId: string | null;
+};
+
+let rowKeyCounter = 0;
+
+function nextRowKey(prefix: string): string {
+  rowKeyCounter += 1;
+  return `${prefix}-${rowKeyCounter}`;
+}
+
 export function StatsValidatorClient() {
   const router = useRouter();
   const accessToken = useAuthStore((s) => s.accessToken);
@@ -34,6 +47,7 @@ export function StatsValidatorClient() {
   const [hydrated, setHydrated] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<PendingChildFile[]>([]);
   const [selectedFileId, setSelectedFileId] = useState("");
+  const [matchContext, setMatchContext] = useState<MatchContext | null>(null);
   const [rows, setRows] = useState<EditableRatingRow[]>([]);
   const [loadingFiles, setLoadingFiles] = useState(true);
   const [loadingRatings, setLoadingRatings] = useState(false);
@@ -96,15 +110,22 @@ export function StatsValidatorClient() {
   async function handleFileChange(fileId: string) {
     setSelectedFileId(fileId);
     setRows([]);
+    setMatchContext(null);
     if (!fileId || !accessToken) return;
 
     setLoadingRatings(true);
     try {
       const ratings = await getFileRatings(accessToken, fileId);
+      const first = ratings[0];
+      setMatchContext({
+        fileId,
+        sourceGameId: first?.sourceGameId ?? null,
+        teamCycleSeasonId: first?.teamCycleSeasonId ?? null,
+      });
       setRows(
-        ratings.map((row, index) => ({
+        ratings.map((row) => ({
           ...row,
-          rowKey: `${row.fileId}-${index}`,
+          rowKey: nextRowKey(row.fileId),
         })),
       );
     } catch (err) {
@@ -114,6 +135,7 @@ export function StatsValidatorClient() {
         flashError("Nao foi possivel carregar as estatisticas do arquivo.");
       }
       setRows([]);
+      setMatchContext(null);
     } finally {
       setLoadingRatings(false);
     }
@@ -122,12 +144,45 @@ export function StatsValidatorClient() {
   function updateRow(
     rowKey: string,
     patch: Partial<
-      Pick<EditableRatingRow, "playerName" | "goals" | "assists" | "averageRating">
+      Pick<
+        EditableRatingRow,
+        "position" | "playerName" | "goals" | "assists" | "averageRating"
+      >
     >,
   ) {
     setRows((current) =>
       current.map((row) => (row.rowKey === rowKey ? { ...row, ...patch } : row)),
     );
+  }
+
+  function handleDeleteRow(rowKey: string) {
+    setRows((current) => current.filter((row) => row.rowKey !== rowKey));
+  }
+
+  function handleAddRow() {
+    if (!selectedFileId || !matchContext) {
+      flashError("Selecione um arquivo antes de adicionar linhas.");
+      return;
+    }
+    if (!matchContext.sourceGameId || !matchContext.teamCycleSeasonId) {
+      flashError(
+        "Nao ha sourceGameId/teamCycleSeasonId neste arquivo para novas linhas.",
+      );
+      return;
+    }
+
+    const newRow: EditableRatingRow = {
+      rowKey: nextRowKey(`manual-${selectedFileId}`),
+      fileId: matchContext.fileId,
+      sourceGameId: matchContext.sourceGameId,
+      teamCycleSeasonId: matchContext.teamCycleSeasonId,
+      position: "",
+      playerName: "",
+      goals: 0,
+      assists: 0,
+      averageRating: null,
+    };
+    setRows((current) => [...current, newRow]);
   }
 
   async function handleSave() {
@@ -165,6 +220,7 @@ export function StatsValidatorClient() {
       });
       flashSuccess("Estatisticas salvas com sucesso.");
       setSelectedFileId("");
+      setMatchContext(null);
       setRows([]);
       await loadPendingFiles(accessToken);
     } catch (err) {
@@ -183,9 +239,16 @@ export function StatsValidatorClient() {
       {
         key: "position",
         header: "Posição",
-        width: "5rem",
+        width: "6rem",
         render: (row) => (
-          <span className="text-[var(--ink)]">{row.position || "—"}</span>
+          <input
+            aria-label={`Posicao de ${row.playerName || "jogador"}`}
+            value={row.position}
+            disabled={saving}
+            onChange={(e) => updateRow(row.rowKey, { position: e.target.value })}
+            className={fieldClass}
+            placeholder="—"
+          />
         ),
       },
       {
@@ -278,6 +341,23 @@ export function StatsValidatorClient() {
           />
         ),
       },
+      {
+        key: "actions",
+        header: "",
+        align: "right",
+        width: "6rem",
+        render: (row) => (
+          <button
+            type="button"
+            onClick={() => handleDeleteRow(row.rowKey)}
+            disabled={saving}
+            aria-label={`Remover ${row.playerName || "linha"}`}
+            className="cursor-pointer rounded-md border border-red-400/50 px-3 py-1.5 text-xs font-medium text-red-300 transition-colors hover:border-red-300 hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Deletar
+          </button>
+        ),
+      },
     ],
     [saving],
   );
@@ -302,14 +382,24 @@ export function StatsValidatorClient() {
               Ola, {name} · revise e confirme os CSVs gerados pelo OCR
             </p>
           </header>
-          <button
-            type="button"
-            onClick={() => void handleSave()}
-            disabled={saving || !selectedFileId || rows.length === 0}
-            className="cursor-pointer rounded-md bg-[var(--lime)] px-4 py-2 text-sm font-semibold text-[#052e16] transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {saving ? "Salvando..." : "Salvar"}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={handleAddRow}
+              disabled={saving || !selectedFileId || !matchContext}
+              className="cursor-pointer rounded-md border border-[var(--stroke)] px-4 py-2 text-sm font-medium text-[var(--ink)] transition-colors hover:border-[var(--lime)] hover:text-[var(--lime)] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Adicionar linha
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleSave()}
+              disabled={saving || !selectedFileId || rows.length === 0}
+              className="cursor-pointer rounded-md bg-[var(--lime)] px-4 py-2 text-sm font-semibold text-[#052e16] transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {saving ? "Salvando..." : "Salvar"}
+            </button>
+          </div>
         </div>
 
         <div className="mt-8 grid max-w-md grid-cols-[6.5rem_1fr] items-center gap-3">
@@ -340,7 +430,7 @@ export function StatsValidatorClient() {
             loadingLabel="Carregando estatisticas..."
             emptyMessage={
               selectedFileId
-                ? "Nenhuma linha encontrada neste arquivo."
+                ? "Nenhuma linha na tabela. Use Adicionar linha se precisar."
                 : "Selecione um arquivo para validar as estatisticas."
             }
           />
