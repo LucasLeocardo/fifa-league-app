@@ -144,15 +144,16 @@ CREATE TABLE "Match" (
 );
 
 CREATE TABLE "File" (
-    "id"           uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
-    "parentId"     uuid,
-    "sourceGameId" uuid,
-    "name"         varchar(255) NOT NULL,
-    "extension"    varchar(255),
-    "mimeType"     varchar(255),
-    "url"          text        NOT NULL,
-    "isProcessed"  boolean     NOT NULL DEFAULT false,
-    "createdAt"    timestamptz NOT NULL DEFAULT now()
+    "id"                uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+    "parentId"          uuid,
+    "sourceGameId"      uuid,
+    "teamCycleSeasonId" uuid,
+    "name"              varchar(255) NOT NULL,
+    "extension"         varchar(255),
+    "mimeType"          varchar(255),
+    "url"               text        NOT NULL,
+    "isProcessed"       boolean     NOT NULL DEFAULT false,
+    "createdAt"         timestamptz NOT NULL DEFAULT now()
 );
 
 CREATE TABLE "MatchPlayerStat" (
@@ -217,6 +218,10 @@ ALTER TABLE "File"
 ALTER TABLE "File"
     ADD CONSTRAINT "fk_File_sourceGameId"
     FOREIGN KEY ("sourceGameId") REFERENCES "Match" ("id");
+
+ALTER TABLE "File"
+    ADD CONSTRAINT "fk_File_teamCycleSeasonId"
+    FOREIGN KEY ("teamCycleSeasonId") REFERENCES "TeamCycleSeason" ("id");
 
 -- FKs de tabelas de relacionamento (colunas NOT NULL)
 ALTER TABLE "MatchPlayerStat"
@@ -322,6 +327,7 @@ CREATE INDEX "ix_MatchPlayerStat_teamSquadId"     ON "MatchPlayerStat" ("teamSqu
 CREATE INDEX "ix_MatchPlayerStat_sourceFile"      ON "MatchPlayerStat" ("sourceFile");
 CREATE INDEX "ix_File_parentId"                   ON "File" ("parentId");
 CREATE INDEX "ix_File_sourceGameId"               ON "File" ("sourceGameId");
+CREATE INDEX "ix_File_teamCycleSeasonId"          ON "File" ("teamCycleSeasonId");
 CREATE INDEX "ix_UserFeature_userId"              ON "UserFeature" ("userId");
 CREATE INDEX "ix_UserFeature_featureId"           ON "UserFeature" ("featureId");
 
