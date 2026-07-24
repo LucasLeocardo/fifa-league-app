@@ -510,3 +510,111 @@ export function createMatch(
     body: JSON.stringify(payload),
   });
 }
+
+export type PlayerSearchResult = {
+  playerId: string;
+  playerName: string;
+  overall: number | null;
+  positions: string[];
+  positionIds: string[];
+  teamName: string | null;
+  teamCycleSeasonId: string | null;
+};
+
+/**
+ * Busca jogadores pelo nome (contains / ILIKE no back-end).
+ */
+export function searchPlayers(
+  accessToken: string,
+  name: string,
+): Promise<PlayerSearchResult[]> {
+  const query = `?name=${encodeURIComponent(name)}`;
+  return request<PlayerSearchResult[]>(`/api/v1/players${query}`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+}
+
+/**
+ * Detalhe de um jogador pelo id.
+ */
+export function getPlayer(
+  accessToken: string,
+  playerId: string,
+): Promise<PlayerSearchResult> {
+  return request<PlayerSearchResult>(
+    `/api/v1/players/${encodeURIComponent(playerId)}`,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    },
+  );
+}
+
+export type CreatePlayerPayload = {
+  name: string;
+  overall: number;
+  positionIds: string[];
+};
+
+/**
+ * Cadastra um novo jogador (admin).
+ */
+export function createPlayer(
+  accessToken: string,
+  payload: CreatePlayerPayload,
+): Promise<PlayerSearchResult> {
+  return request<PlayerSearchResult>("/api/v1/players", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(payload),
+  });
+}
+
+export type UpdatePlayerPayload = {
+  name: string;
+  overall: number;
+  positionIds: string[];
+  teamCycleSeasonId?: string | null;
+};
+
+/**
+ * Atualiza um jogador existente (admin).
+ */
+export function updatePlayer(
+  accessToken: string,
+  playerId: string,
+  payload: UpdatePlayerPayload,
+): Promise<PlayerSearchResult> {
+  return request<PlayerSearchResult>(
+    `/api/v1/players/${encodeURIComponent(playerId)}`,
+    {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+/**
+ * Remove um jogador (somente usuario Leocardo + admin).
+ */
+export function deletePlayer(
+  accessToken: string,
+  playerId: string,
+): Promise<void> {
+  return request<void>(`/api/v1/players/${encodeURIComponent(playerId)}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+}

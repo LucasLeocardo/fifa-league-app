@@ -9,6 +9,7 @@ from app.api.v1.endpoints import (
     leaderboard,
     match_types,
     matches,
+    players,
     positions,
     squad,
     standings,
@@ -32,6 +33,7 @@ api_router.include_router(
     leaderboard.router, prefix="/leaderboard", tags=["leaderboard"]
 )
 api_router.include_router(positions.router, prefix="/positions", tags=["positions"])
+api_router.include_router(players.router, prefix="/players", tags=["players"])
 api_router.include_router(matches.router, prefix="/matches", tags=["matches"])
 api_router.include_router(
     match_types.router, prefix="/match-types", tags=["match-types"]

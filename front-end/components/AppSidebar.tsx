@@ -1,6 +1,14 @@
 "use client";
 
-import { ChartColumn, LayoutDashboard, LogOut, Trophy, Users, CalendarDays } from "lucide-react";
+import {
+  CalendarDays,
+  ChartColumn,
+  LayoutDashboard,
+  LogOut,
+  Settings2,
+  Trophy,
+  Users,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
@@ -26,6 +34,7 @@ type NavItem = {
   title: string;
   href: string;
   icon: typeof Trophy;
+  adminOnly?: boolean;
 };
 
 const navItems: NavItem[] = [
@@ -33,6 +42,12 @@ const navItems: NavItem[] = [
   { title: "Elenco", href: "/squad", icon: Users },
   { title: "Estatísticas", href: "/stats", icon: ChartColumn },
   { title: "Resultados", href: "/results", icon: CalendarDays },
+  {
+    title: "Configuração de jogadores",
+    href: "/player-config",
+    icon: Settings2,
+    adminOnly: true,
+  },
   { title: "Início", href: "/home", icon: LayoutDashboard },
 ];
 
@@ -40,11 +55,16 @@ export function AppSidebar() {
   const router = useRouter();
   const pathname = usePathname();
   const name = useAuthStore((s) => s.name);
+  const isAdmin = useAuthStore((s) => s.isAdmin);
   const accessToken = useAuthStore((s) => s.accessToken);
   const clearSession = useAuthStore((s) => s.clearSession);
   const flashSuccess = useFlashStore((s) => s.success);
   const flashError = useFlashStore((s) => s.error);
   const [loggingOut, setLoggingOut] = useState(false);
+
+  const visibleNavItems = navItems.filter(
+    (item) => !item.adminOnly || isAdmin,
+  );
 
   async function handleLogout() {
     setLoggingOut(true);
@@ -86,7 +106,7 @@ export function AppSidebar() {
           <SidebarGroupLabel>Navegação</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navItems.map((item) => (
+              {visibleNavItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
                     isActive={pathname === item.href}

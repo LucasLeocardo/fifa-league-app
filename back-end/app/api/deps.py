@@ -14,6 +14,7 @@ from app.repositories.cycle_season import CycleSeasonRepository
 from app.repositories.leaderboard import LeaderboardRepository
 from app.repositories.match import MatchRepository
 from app.repositories.match_type import MatchTypeRepository
+from app.repositories.player import PlayerRepository
 from app.repositories.position import PositionRepository
 from app.repositories.team_cycle_season import TeamCycleSeasonRepository
 from app.repositories.team_squad import TeamSquadRepository
@@ -24,6 +25,7 @@ from app.services.cycle_season import CycleSeasonService
 from app.services.leaderboard import LeaderboardService
 from app.services.match import MatchService
 from app.services.match_type import MatchTypeService
+from app.services.player import PlayerService
 from app.services.position import PositionService
 from app.services.team_cycle_season import TeamCycleSeasonService
 from app.services.team_squad import TeamSquadService
@@ -129,6 +131,16 @@ def get_match_service(
     return MatchService(repository)
 
 
+def get_player_repository(db: DbSession) -> PlayerRepository:
+    return PlayerRepository(db)
+
+
+def get_player_service(
+    repository: Annotated[PlayerRepository, Depends(get_player_repository)],
+) -> PlayerService:
+    return PlayerService(repository)
+
+
 def get_auth_service(
     repository: Annotated[UserRepository, Depends(get_user_repository)],
 ) -> AuthService:
@@ -192,6 +204,7 @@ MatchServiceDep = Annotated[MatchService, Depends(get_match_service)]
 MatchTypeServiceDep = Annotated[
     MatchTypeService, Depends(get_match_type_service)
 ]
+PlayerServiceDep = Annotated[PlayerService, Depends(get_player_service)]
 CurrentUserDep = Annotated[User, Depends(get_current_user)]
 CurrentAdminUserDep = Annotated[User, Depends(get_current_admin_user)]
 BearerTokenDep = Annotated[HTTPAuthorizationCredentials, Depends(_bearer)]
