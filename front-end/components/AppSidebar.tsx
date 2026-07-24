@@ -3,6 +3,7 @@
 import {
   CalendarDays,
   ChartColumn,
+  ClipboardCheck,
   LayoutDashboard,
   LogOut,
   Settings2,
@@ -46,6 +47,12 @@ const navItems: NavItem[] = [
     title: "Configuração de jogadores",
     href: "/player-config",
     icon: Settings2,
+    adminOnly: true,
+  },
+  {
+    title: "Validador de estatísticas",
+    href: "/stats-validator",
+    icon: ClipboardCheck,
     adminOnly: true,
   },
   { title: "Início", href: "/home", icon: LayoutDashboard },

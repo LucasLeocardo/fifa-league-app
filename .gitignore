@@ -1,2 +1,4 @@
 # Scripts locais de carga / seed (CSV, venv, etc.)
 ETL/
+.venv
+__pycache__/

@@ -679,3 +679,93 @@ export async function uploadMatchPhotos(
 
   return (await response.json()) as UploadedFile[];
 }
+
+export type PendingChildFile = {
+  fileId: string;
+  name: string;
+};
+
+export type MatchPlayerRatingRow = {
+  fileId: string;
+  sourceGameId: string | null;
+  teamCycleSeasonId: string | null;
+  position: string;
+  playerName: string;
+  goals: number;
+  assists: number;
+  averageRating: number | null;
+};
+
+export type ConfirmPlayerStatItem = {
+  playerName: string;
+  goals: number;
+  assists: number;
+  averageRating: number | null;
+  sourceGameId: string;
+  teamCycleSeasonId: string;
+};
+
+export type ConfirmPlayerStatsPayload = {
+  fileId: string;
+  players: ConfirmPlayerStatItem[];
+};
+
+export type MatchPlayerStatCreated = {
+  matchPlayerStatId: string;
+  matchId: string;
+  playerId: string;
+  playerName: string;
+  teamSquadId: string | null;
+  sourceFile: string | null;
+  goals: number | null;
+  assists: number | null;
+  rating: number | null;
+};
+
+/**
+ * Files filhos (CSV) ainda nao processados.
+ */
+export function getPendingChildFiles(
+  accessToken: string,
+): Promise<PendingChildFile[]> {
+  return request<PendingChildFile[]>("/api/v1/files/pending-children", {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+}
+
+/**
+ * Baixa e processa o CSV de um File, retornando a tabela de ratings.
+ */
+export function getFileRatings(
+  accessToken: string,
+  fileId: string,
+): Promise<MatchPlayerRatingRow[]> {
+  return request<MatchPlayerRatingRow[]>(
+    `/api/v1/files/${encodeURIComponent(fileId)}/ratings`,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    },
+  );
+}
+
+/**
+ * Confirma ratings OCR: resolve jogadores, grava MatchPlayerStat e marca File.
+ */
+export function confirmFileRatings(
+  accessToken: string,
+  payload: ConfirmPlayerStatsPayload,
+): Promise<MatchPlayerStatCreated[]> {
+  return request<MatchPlayerStatCreated[]>("/api/v1/files/confirm-ratings", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(payload),
+  });
+}

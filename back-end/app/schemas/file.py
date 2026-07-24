@@ -25,3 +25,55 @@ class FileRead(_CamelModel):
     source_game_id: uuid.UUID | None = None
     team_cycle_season_id: uuid.UUID | None = None
     is_processed: bool = False
+
+
+class FilePendingChildRead(_CamelModel):
+    """File filho (parentId preenchido) ainda nao processado."""
+
+    file_id: uuid.UUID
+    name: str = Field(..., max_length=255)
+
+
+class MatchPlayerRatingRow(_CamelModel):
+    """Linha de desempenho individual extraida do CSV do OCR."""
+
+    file_id: uuid.UUID
+    source_game_id: uuid.UUID | None = None
+    team_cycle_season_id: uuid.UUID | None = None
+    position: str = Field(..., max_length=32)
+    player_name: str = Field(..., max_length=255)
+    goals: int = Field(..., ge=0)
+    assists: int = Field(..., ge=0)
+    average_rating: float | None = None
+
+
+class ConfirmPlayerStatItem(_CamelModel):
+    """Linha confirmada pelo front para gravar em MatchPlayerStat."""
+
+    player_name: str = Field(..., min_length=1, max_length=255)
+    goals: int = Field(..., ge=0)
+    assists: int = Field(..., ge=0)
+    average_rating: float | None = None
+    source_game_id: uuid.UUID
+    team_cycle_season_id: uuid.UUID
+
+
+class ConfirmPlayerStatsPayload(_CamelModel):
+    """Payload para confirmar ratings OCR e gravar MatchPlayerStat."""
+
+    file_id: uuid.UUID
+    players: list[ConfirmPlayerStatItem] = Field(..., min_length=1)
+
+
+class MatchPlayerStatRead(_CamelModel):
+    """Linha criada em MatchPlayerStat."""
+
+    match_player_stat_id: uuid.UUID
+    match_id: uuid.UUID
+    player_id: uuid.UUID
+    player_name: str
+    team_squad_id: uuid.UUID | None = None
+    source_file: uuid.UUID | None = None
+    goals: int | None = None
+    assists: int | None = None
+    rating: float | None = None

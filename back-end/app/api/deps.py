@@ -14,6 +14,7 @@ from app.repositories.cycle_season import CycleSeasonRepository
 from app.repositories.file import FileRepository
 from app.repositories.leaderboard import LeaderboardRepository
 from app.repositories.match import MatchRepository
+from app.repositories.match_player_stat import MatchPlayerStatRepository
 from app.repositories.match_type import MatchTypeRepository
 from app.repositories.player import PlayerRepository
 from app.repositories.position import PositionRepository
@@ -26,6 +27,7 @@ from app.services.cycle_season import CycleSeasonService
 from app.services.file import FileService
 from app.services.leaderboard import LeaderboardService
 from app.services.match import MatchService
+from app.services.match_player_stat import MatchPlayerStatService
 from app.services.match_type import MatchTypeService
 from app.services.player import PlayerService
 from app.services.position import PositionService
@@ -154,6 +156,28 @@ def get_file_service(
     return FileService(db, repository)
 
 
+def get_match_player_stat_repository(db: DbSession) -> MatchPlayerStatRepository:
+    return MatchPlayerStatRepository(db)
+
+
+def get_match_player_stat_service(
+    db: DbSession,
+    player_repository: Annotated[
+        PlayerRepository, Depends(get_player_repository)
+    ],
+    file_repository: Annotated[FileRepository, Depends(get_file_repository)],
+    match_player_stat_repository: Annotated[
+        MatchPlayerStatRepository, Depends(get_match_player_stat_repository)
+    ],
+) -> MatchPlayerStatService:
+    return MatchPlayerStatService(
+        db,
+        player_repository,
+        file_repository,
+        match_player_stat_repository,
+    )
+
+
 def get_auth_service(
     repository: Annotated[UserRepository, Depends(get_user_repository)],
 ) -> AuthService:
@@ -219,6 +243,9 @@ MatchTypeServiceDep = Annotated[
 ]
 PlayerServiceDep = Annotated[PlayerService, Depends(get_player_service)]
 FileServiceDep = Annotated[FileService, Depends(get_file_service)]
+MatchPlayerStatServiceDep = Annotated[
+    MatchPlayerStatService, Depends(get_match_player_stat_service)
+]
 CurrentUserDep = Annotated[User, Depends(get_current_user)]
 CurrentAdminUserDep = Annotated[User, Depends(get_current_admin_user)]
 BearerTokenDep = Annotated[HTTPAuthorizationCredentials, Depends(_bearer)]

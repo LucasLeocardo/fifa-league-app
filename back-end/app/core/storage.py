@@ -1,8 +1,11 @@
-"""Upload de arquivos no Supabase Storage."""
+"""Upload/download de arquivos no Supabase Storage."""
 
 from __future__ import annotations
 
 import uuid
+from urllib.parse import unquote, urlparse
+
+import httpx
 
 from app.core.config import settings
 from app.core.exceptions import AuthProviderError
@@ -31,6 +34,51 @@ def upload_bytes(
     except Exception as exc:
         raise AuthProviderError(
             f"Falha ao enviar arquivo ao Supabase Storage: {exc}"
+        ) from exc
+
+
+def object_path_from_public_url(url: str, bucket: str | None = None) -> str | None:
+    """Extrai o path do objeto a partir da URL publica do Storage."""
+    bucket_name = bucket or settings.supabase_storage_bucket
+    marker = f"/object/public/{bucket_name}/"
+    idx = url.find(marker)
+    if idx >= 0:
+        return unquote(url[idx + len(marker) :].split("?", 1)[0])
+
+    parsed = urlparse(url)
+    parts = [p for p in parsed.path.split("/") if p]
+    try:
+        bucket_idx = parts.index(bucket_name)
+        rest = parts[bucket_idx + 1 :]
+        if rest:
+            return unquote("/".join(rest))
+    except ValueError:
+        pass
+    return None
+
+
+def download_bytes(*, file_url: str) -> bytes:
+    """Baixa o conteudo do arquivo pela URL (Storage path ou URL publica)."""
+    client = get_supabase_admin()
+    bucket = settings.supabase_storage_bucket
+    object_path = object_path_from_public_url(file_url, bucket)
+
+    try:
+        if object_path:
+            content = client.storage.from_(bucket).download(object_path)
+            if content:
+                return content
+    except Exception:
+        # Cai para download HTTP pela URL publica.
+        pass
+
+    try:
+        response = httpx.get(file_url, timeout=60.0, follow_redirects=True)
+        response.raise_for_status()
+        return response.content
+    except Exception as exc:
+        raise AuthProviderError(
+            f"Falha ao baixar arquivo do Storage: {exc}"
         ) from exc
 
 

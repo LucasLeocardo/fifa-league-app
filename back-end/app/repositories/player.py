@@ -128,6 +128,49 @@ class PlayerRepository:
         """Busca Player pelo id."""
         return await self.db.get(Player, player_id)
 
+    async def list_squad_players_by_team_cycle_season(
+        self, team_cycle_season_id: uuid.UUID
+    ) -> Sequence[tuple[uuid.UUID, str, uuid.UUID]]:
+        """Jogadores do elenco: (player_id, player_name, team_squad_id)."""
+        result = await self.db.execute(
+            select(Player.id, Player.name, TeamSquad.id)
+            .select_from(TeamSquad)
+            .join(Player, Player.id == TeamSquad.player_id)
+            .where(TeamSquad.team_cycle_season_id == team_cycle_season_id)
+            .order_by(Player.name.asc())
+        )
+        return result.all()
+
+    async def list_name_candidates(
+        self, name: str, *, limit: int = 40
+    ) -> Sequence[tuple[uuid.UUID, str]]:
+        """Candidatos globais por trechos do nome (para fallback do matching)."""
+        tokens = [t for t in name.strip().split() if len(t) >= 2]
+        if not tokens:
+            tokens = [name.strip()] if name.strip() else []
+        if not tokens:
+            return []
+
+        stmt = select(Player.id, Player.name)
+        # Prefere candidatos que casam com o maior token (sobrenome costuma ser maior).
+        primary = max(tokens, key=len)
+        stmt = stmt.where(Player.name.ilike(f"%{primary}%"))
+        stmt = stmt.order_by(Player.name.asc()).limit(limit)
+        result = await self.db.execute(stmt)
+        return result.all()
+
+    async def get_team_squad_id(
+        self, *, team_cycle_season_id: uuid.UUID, player_id: uuid.UUID
+    ) -> uuid.UUID | None:
+        """Resolve TeamSquad.id pelo time da temporada + jogador."""
+        result = await self.db.execute(
+            select(TeamSquad.id)
+            .where(TeamSquad.team_cycle_season_id == team_cycle_season_id)
+            .where(TeamSquad.player_id == player_id)
+            .limit(1)
+        )
+        return result.scalar_one_or_none()
+
     async def get_overall_by_value(self, value: int) -> Overall | None:
         """Busca a linha de Overall pelo value (nota)."""
         result = await self.db.execute(
