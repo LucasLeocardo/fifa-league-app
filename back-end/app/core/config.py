@@ -1,8 +1,9 @@
 """Configuracao da aplicacao, carregada de variaveis de ambiente (.env)."""
 
 from functools import lru_cache
+from typing import Any
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -48,7 +49,20 @@ class Settings(BaseSettings):
     )
 
     # --- CORS ---
+    # Aceita JSON (["https://a.com"]) ou CSV (https://a.com,http://localhost:3000).
     backend_cors_origins: list[str] = ["http://localhost:3000"]
+
+    @field_validator("backend_cors_origins", mode="before")
+    @classmethod
+    def _parse_cors_origins(cls, value: Any) -> Any:
+        if isinstance(value, str):
+            text = value.strip()
+            if not text:
+                return []
+            if text.startswith("["):
+                return value
+            return [part.strip() for part in text.split(",") if part.strip()]
+        return value
 
     @property
     def async_database_url(self) -> str:
